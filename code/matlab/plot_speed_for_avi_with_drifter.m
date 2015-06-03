@@ -1,19 +1,16 @@
-
-
-
-
-
+PATH2SIM='/EcoII/acadia_uni/workspace/simulated/FVCOM/dngridCSR/drifter_runs/GP/2013_Aug_01_3D/output/subdomain_GP1_0001.nc'
+PATH2OBS='/EcoII/acadia_uni/workspace/observed/GP/Drifter/GP_F_20130801_78_2_001_sE15.mat'
 
 if 1==1
 	
-	name='dg_drifter';
-	grid='dngrid';	
+	name='gp_d_aug01_13';
+	grid='dngridCSR';	
 	type='2d';
 	resolution='-r600';	
 	
 
-    load('/home/moe46/workspace_matlab/misc_plots/saved_region/dngrid_3d_-65.7705_-65.7469_44.666_44.6919.mat');
-    data=load('/home/moe46/workspace_matlab/drifters/DG_drift.mat');
+    load(PATH2SIM);
+    data=load(PATH2OBS);
 
     region=[min(nodell(:,1)) max(nodell(:,1)) min(nodell(:,2)) max(nodell(:,2))];
 
@@ -21,18 +18,11 @@ if 1==1
     va=squeeze(v(:,1,:))';
 end
 
-
 speed=sqrt(ua.^2+va.^2);
-
-
-
-
 
 [idx]=equally_spaced_vectors(uvnodell,uvnode,nodexy,trinodes,region,100);
 
-
-
-loc=['/home/moe46/workspace_matlab/figures/timeseries/speed/' grid '_' name '/'];
+loc=['~/karsten/data/gp/' grid '_' name '/'];
 mkdir(loc);
 
 

@@ -18,14 +18,14 @@ LOCATION = "DG"
 
 """
 The program plots drifter trajectories taken from a drifter class onto a
-spatially varying map of the flow speed (specifically, the flood or ebb 
+spatially varying map of the flow speed (specifically, the flood or ebb
 velocity norm). The program relies on a location tag and works in that domain.
 
 Code adopted from Jon Smith's timespan.py.
 
 Program called via command line with optional flags as:
   $ python spatialPlot.py <path_to_fvcom_file> <path_to_obs_dir> <location_tag> -debug
-""" 
+"""
 
 def mjd2num(x, debug=False):
     '''
@@ -43,7 +43,7 @@ def dn2dt(datenum, debug=False):
     '''
     if debug:
         print 'converting matlab datenum to python datetime...'
-        
+
     return datetime.fromordinal(int(datenum)) + \
         timedelta(days=datenum % 1) - \
         timedelta(days=366)
@@ -54,16 +54,16 @@ def fvcomTime(filename, debug=False):
     Identify the timespan for a given FVCOM file.
     '''
     # iterate through the fvcom files
- 
+
     fvcom = nc.Dataset(filename)
     if debug:
         print 'nc fvcom file loaded....\n reading variables...'
-        
+
     try:
         time = fvcom.variables['time'][:]
     except KeyError:
         time = fvcom.variables['time_JD'][:]
-    
+
     # grab the times and convert them to strings
     start, end = mjd2num(time[0]), mjd2num(time[-1])
     return start, end
@@ -76,7 +76,7 @@ def driftTimes(name, debug=False):
     # iterate through the drifter files
     start_time = []
     end_time = []
-    
+
     try:
         if debug:
             print '\tloading file {}'.format(name)
@@ -87,63 +87,63 @@ def driftTimes(name, debug=False):
 
     # grab the times and convert them to strings
     start, end = times[0], times[-1]
-    return start, end 
+    return start, end
 
 
 def plotTrajectories(model, dir, matfiles, loc, debug=False):
     """
     Plots the trajectories of the given drifter files against a color map of averaged tidal flow.
-    """ 
+    """
     # finds the indices where flood / ebb occurs; computes velocity norm
     fI, eI, pa, pav = model.Util2D.ebb_flood_split_at_point(loc[0], loc[1])
-    model.Util3D.velo_norm() 
-    
+    model.Util3D.velo_norm()
+
     first = True
     for name in matfiles:
 	drift = Drifter(dir+name, debug=debug)
-	
+
 	if first:
-	    tide = str(drift.Data['water_level'].tide)
-	    # averages velocity norm over flood or ebb cycle
-   	    if tide == 'flood':
-    		tideNorm = np.mean(model.Variables.velo_norm[fI,:,:],0)
-   	    elif tide == 'ebb':
-    	        tideNorm = np.mean(model.Variables.velo_norm[eI,:,:],0) 
-	    # creates spatially varying color map of mean velocity norm
-    	    model.Plots.colormap_var(tideNorm[0,:], mesh=False)
+        tide = str(drift.Data['water_level'].tide)
+        # averages velocity norm over flood or ebb cycle
+        if tide == 'flood':
+            tideNorm = np.mean(model.Variables.velo_norm[fI,:,:],0)
+        elif tide == 'ebb':
+                tideNorm = np.mean(model.Variables.velo_norm[eI,:,:],0)
+        # creates spatially varying color map of mean velocity norm
+            model.Plots.colormap_var(tideNorm[0,:], mesh=False)
             plt.hold('on')
-	    first = False
+        first = False
 
 	if not str(drift.Data['water_level'].tide) == tide:
-	    continue
-	
+        continue
+
 	x = drift.Variables.lon
 	y = drift.Variables.lat
 	u = drift.Variables.u
 	v = drift.Variables.v
-	
+
 	if debug:
-	    print 'creating scatter plot..'	
+        print 'creating scatter plot..'
 	# plt.quiver(x, y, u, v)
-    	plt.scatter(x,y)
-  	plt.hold('on')  
+        plt.scatter(x,y)
+    plt.hold('on')
 
 
 if __name__ == '__main__':
 
     argc = len(sys.argv)
-    
+
     if '-debug' in sys.argv:
         print '--debug mode on--'
         debug = True
     else:
-        debug = False 
+        debug = False
 
     if argc >= 4:
         location = sys.argv[3]
     else:
 	location = LOCATION
- 
+
     if argc >= 3:
         simFile = sys.argv[1]
         obsDir = sys.argv[0]
@@ -167,7 +167,7 @@ if __name__ == '__main__':
             sys.exit('no files found in drifter directory.')
     else:
         sys.exit('drifter directory not found.')
-    
+
     # sets location centre for flood/tide split calculation
     if location == 'GP':
         loc = [-66.33906, 44.26898]
@@ -177,7 +177,7 @@ if __name__ == '__main__':
         loc = [-66.20692, 44.38937]
     elif location == 'MP':
 	loc = [-64.40725, 45.34758]
-    else: sys.exit("not a valid location tag.") 	
+    else: sys.exit("not a valid location tag.")
 
     # finds relevant time window to work in
     ncfile = FVCOM(simFile, debug=debug)
@@ -185,17 +185,17 @@ if __name__ == '__main__':
     mStart, mEnd = float(mTimes[0]), float(mTimes[-1])
     if debug:
 	print 'model time is from {} to {}.'.format(mStart, mEnd)
-    
+
     # finds drifter files in fvcom runtime window
     files = []
     for matfile in dirs:
 	if debug:
-	    print 'gathering all matlab drifter files in model run time...'
+        print 'gathering all matlab drifter files in model run time...'
 
         dStart, dEnd = driftTimes(obsDir + matfile, debug=debug)
         dStart, dEnd = float(dStart), float(dEnd)
         if dStart > mStart and mEnd > dEnd:
-	    files.append(matfile)
+        files.append(matfile)
 
-    plotTrajectories(ncfile, obsDir, files, loc, debug=debug)    
+    plotTrajectories(ncfile, obsDir, files, loc, debug=debug)
     plt.show()
