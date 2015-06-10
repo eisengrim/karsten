@@ -8,13 +8,13 @@
 
 start_times=12
 
-matlabpool open 3
+matlabpool open 4
 	parfor starti=1:start_times
 		starti
         pause(starti)
 		savelag{starti}=main(starti);
 	end
-
-save('savedir/lag_out.mat','savelag');
+savepath = ['/array/home/119865c/karsten/lagtracker/savedir/gp_aug01_2013.mat']
+save(savepath,'savelag');
 
 matlabpool close

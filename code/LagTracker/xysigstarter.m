@@ -29,14 +29,14 @@ elseif set.option==2
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Put a random box of n particles around a element number
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-	xbox_size=5000;
-	ybox_size=5000;
+	xbox_size=50;
+	ybox_size=50;
 	num_parts=10;
 	
 		xs=(rand(num_parts,1)-0.5)*xbox_size;
 		ys=(rand(num_parts,1)-0.5)*ybox_size;
         %loc=206894;
-        loc=45177;
+        loc=542;
 		set.xstart(:,1) = grid.xc(loc)+xs;
 		set.ystart(:,1)  = grid.yc(loc)+ys;
 		set.sigstart(:,1) = ones(num_parts,1)*-0.0001;
@@ -45,9 +45,9 @@ elseif set.option==3
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Put a random box of n particles around a location
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-	xbox_size=5000;
-	ybox_size=5000;
-	num_parts=1000;
+	xbox_size=50;
+	ybox_size=50;
+	num_parts=10;
 	
 		xs=(rand(num_parts,1)-0.5)*xbox_size;
 		ys=(rand(num_parts,1)-0.5)*ybox_size;
@@ -62,9 +62,12 @@ elseif set.option==3
         %xloc=213000;
         %yloc=225500;
         %gilislandsouth         
-        xloc=190000;
-        yloc=190000;
-		
+        %xloc=190000;
+        %yloc=190000;
+        %grandpassagecentre
+		xloc=-142167.55674299999
+        yloc=277332.914529
+
         set.xstart(:,1) = xloc+xs;
 		set.ystart(:,1)  = yloc+ys;
 		set.sigstart(:,1) = zeros(num_parts,1);
@@ -192,7 +195,7 @@ else
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	set.xstart  = grid.xc;
 	set.ystart = grid.yc;
-	set.zstart(1:grid.nele,1) = zeros(1:grid.nele,1);
+	set.zstsart(1:grid.nele,1) = zeros(1:grid.nele,1);
 	
 
 end

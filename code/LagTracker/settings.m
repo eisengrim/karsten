@@ -16,8 +16,8 @@ set=settingsdef;
 %set.fvcompath=['/media/moflaher/My Book/kit4/kit4_45days_3/output/kit4_0001.nc'];
 %set.fvcompath=['/media/moflaher/MB_3TB/kit4/kit4_kelp_20m_0.018/output/kit4_0001.nc'];
 %set.fvcompath=['/home/moflaher/workspace_matlab/runs/try16/output/beaufort3_0001.nc'];
-set.fvcompath=['/media/moe46/runs/kit4_kelp/kit4_kelp_nodrag/output/kit4_kelp_0001.nc'];
-
+%set.fvcompath=['/media/moe46/runs/kit4_kelp/kit4_kelp_nodrag/output/kit4_kelp_0001.nc'];
+set.fvcompath=['/EcoII/acadia_uni/workspace/simulated/FVCOM/dngridCSR/drifter_runs/GP/2013_Aug_01_3D/output/subdomain_GP1_0001.nc'];
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Starting step from ncfile
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -47,7 +47,7 @@ set.outputstep=60;
 % xysigstart settings
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 set.starter=1;
-set.option=6;
+set.option=3;
 set.swimspeed=0;
 set.check_turbines=false;
 

@@ -100,33 +100,33 @@ def plotTrajectories(model, dir, matfiles, loc, debug=False):
 
     first = True
     for name in matfiles:
-	drift = Drifter(dir+name, debug=debug)
+        drift = Drifter(dir+name, debug=debug)
 
-	if first:
-        tide = str(drift.Data['water_level'].tide)
-        # averages velocity norm over flood or ebb cycle
-        if tide == 'flood':
-            tideNorm = np.mean(model.Variables.velo_norm[fI,:,:],0)
-        elif tide == 'ebb':
+        if first:
+            tide = str(drift.Data['water_level'].tide)
+            # averages velocity norm over flood or ebb cycle
+            if tide == 'flood':
+                tideNorm = np.mean(model.Variables.velo_norm[fI,:,:],0)
+            elif tide == 'ebb':
                 tideNorm = np.mean(model.Variables.velo_norm[eI,:,:],0)
-        # creates spatially varying color map of mean velocity norm
+            # creates spatially varying color map of mean velocity norm
             model.Plots.colormap_var(tideNorm[0,:], mesh=False)
             plt.hold('on')
-        first = False
+            first = False
 
-	if not str(drift.Data['water_level'].tide) == tide:
-        continue
+        if not str(drift.Data['water_level'].tide) == tide:
+            continue
 
-	x = drift.Variables.lon
-	y = drift.Variables.lat
-	u = drift.Variables.u
-	v = drift.Variables.v
+        x = drift.Variables.lon
+        y = drift.Variables.lat
+        u = drift.Variables.u
+        v = drift.Variables.v
 
-	if debug:
-        print 'creating scatter plot..'
-	# plt.quiver(x, y, u, v)
+        if debug:
+            print 'creating scatter plot..'
+        # plt.quiver(x, y, u, v)
         plt.scatter(x,y)
-    plt.hold('on')
+        plt.hold('on')
 
 
 if __name__ == '__main__':
@@ -142,7 +142,7 @@ if __name__ == '__main__':
     if argc >= 4:
         location = sys.argv[3]
     else:
-	location = LOCATION
+        location = LOCATION
 
     if argc >= 3:
         simFile = sys.argv[1]
@@ -172,11 +172,11 @@ if __name__ == '__main__':
     if location == 'GP':
         loc = [-66.33906, 44.26898]
     elif location == 'DG':
-	loc = [-65.76000, 44.67751]
+        loc = [-65.76000, 44.67751]
     elif location == 'PP':
         loc = [-66.20692, 44.38937]
     elif location == 'MP':
-	loc = [-64.40725, 45.34758]
+        loc = [-64.40725, 45.34758]
     else: sys.exit("not a valid location tag.")
 
     # finds relevant time window to work in
@@ -184,18 +184,18 @@ if __name__ == '__main__':
     mTimes = ncfile.Variables.matlabTime[:]
     mStart, mEnd = float(mTimes[0]), float(mTimes[-1])
     if debug:
-	print 'model time is from {} to {}.'.format(mStart, mEnd)
+        print 'model time is from {} to {}.'.format(mStart, mEnd)
 
     # finds drifter files in fvcom runtime window
     files = []
     for matfile in dirs:
-	if debug:
-        print 'gathering all matlab drifter files in model run time...'
+        if debug:
+            print 'gathering all matlab drifter files in model run time...'
 
         dStart, dEnd = driftTimes(obsDir + matfile, debug=debug)
         dStart, dEnd = float(dStart), float(dEnd)
         if dStart > mStart and mEnd > dEnd:
-        files.append(matfile)
+            files.append(matfile)
 
     plotTrajectories(ncfile, obsDir, files, loc, debug=debug)
     plt.show()
