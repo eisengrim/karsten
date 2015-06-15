@@ -12,9 +12,10 @@ from datetime import datetime, timedelta
 import h5py
 import netCDF4 as nc
 
-PATH_TO_SIM_FILE="/EcoII/acadia_uni/workspace/simulated/FVCOM/dngridCSR/drifter_runs/DG/2013_Nov_05_3D/output/subdomain_DG1_0001.nc"
-PATH_TO_OBS_DIR="/EcoII/acadia_uni/workspace/observed/DG/Drifter/"
-LOCATION = "DG"
+PATH_TO_SIM_FILE="/EcoII/acadia_uni/workspace/simulated/FVCOM/dngridCSR/drifter_runs/GP/2013_Aug_08_3D/output/subdomain_GP1_0001.nc"
+PATH_TO_OBS_DIR="/EcoII/acadia_uni/workspace/observed/GP/Drifter/"
+LOCATION = "GP"
+SAVEPATH='/array/home/119865c/karsten/data/plots/'
 
 """
 The program plots drifter trajectories taken from a drifter class onto a
@@ -101,6 +102,8 @@ def plotTrajectories(model, dir, matfiles, loc, debug=False):
     first = True
     for name in matfiles:
         drift = Drifter(dir+name, debug=debug)
+        if debug:
+            print 'creating drifter object...'
 
         if first:
             tide = str(drift.Data['water_level'].tide)
@@ -110,7 +113,7 @@ def plotTrajectories(model, dir, matfiles, loc, debug=False):
             elif tide == 'ebb':
                 tideNorm = np.mean(model.Variables.velo_norm[eI,:,:],0)
             # creates spatially varying color map of mean velocity norm
-            model.Plots.colormap_var(tideNorm[0,:], mesh=False)
+            model.Plots.colormap_var(tideNorm[0,:], mesh=False, hold=True, title='Depth-Averaged Velocity Norm During '+tide.capitalize()+' Tide')
             plt.hold('on')
             first = False
 
@@ -127,6 +130,44 @@ def plotTrajectories(model, dir, matfiles, loc, debug=False):
         # plt.quiver(x, y, u, v)
         plt.scatter(x,y)
         plt.hold('on')
+
+
+def compareSpeeds(model, dir, matfiles, loc, savedir='', debug=False):
+    """
+    Plots a speed v. time graph for each drifter in the directory and saves it
+    to a defined directory.
+    """
+
+    for i, name in enumerate(matfiles, start=1):
+        drift = Drifter(dir+name, debug=debug)
+        valid = Validation(drift, model, debug=debug)
+        if debug:
+            print 'creating drifter and validation object...'
+
+        mTimes = valid.Variables.struct['mod_time'][:-1]
+
+        oU = valid.Variables.struct['obs_timeseries']['u']
+        oV = valid.Variables.struct['obs_timeseries']['v']
+        mU = valid.Variables.struct['mod_timeseries']['u']
+        mV = valid.Variables.struct['mod_timeseries']['v']
+
+        speedS = np.sqrt(mU**2 + mV**2)
+        speedO = np.sqrt(oU**2 + oV**2)
+
+        datetimes = [datetime.fromordinal(int(x)) + timedelta(days=x%1) \
+                  - timedelta(days = 366) for x in mTimes]
+
+        plt.plot(datetimes, speedS, 'b', label='Simulated')
+        plt.hold('on')
+        plt.plot(datetimes, speedO, 'r', label='Observed')
+        plt.suptitle('Observed vs. Simulated Speed vs. Time')
+        plt.xlabel('Time (HH:MM:SS)')
+        plt.ylabel('Speed (m/s)')
+        plt.legend()
+        plt.gcf().autofmt_xdate()
+        if savedir.strip() and name.strip():
+            if os.path.exists(savedir) and os.path.isdir(savedir):
+                plt.savefig(savedir+LOCATION+'_drifter_'+i+'_speedvtime.png')
 
 
 if __name__ == '__main__':
@@ -198,4 +239,5 @@ if __name__ == '__main__':
             files.append(matfile)
 
     plotTrajectories(ncfile, obsDir, files, loc, debug=debug)
+    compareSpeeds(ncfile, obsDir, files, loc, debug=debug, savedir=SAVEPATH)
     plt.show()
