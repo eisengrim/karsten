@@ -152,12 +152,20 @@ def createPlots(ncfile, files, loc, savepath, sim_name, tight=False, \
             print 'creating drifter object...'
         drift = Drifter(fname, debug=False)
 
+        # creates drifter object window for flow map
+        if debug:
+            print 'creating drifter object window...'
+        tModel = ncfile.Variables.matlabTime
+        tDrift = drift.Variables.matlabTime
+        win1 = (np.abs(tModel-tDrift.min())).argmin()
+        win2 = (np.abs(tModel-tDrift.max())).argmin()
+
         tide = str(drift.Data['water_level'].tide)
-        # averages velocity norm over flood or ebb cycle - possible window?
+        # averages velocity norm over flood or ebb cycle within drifter window
         if tide == 'flood':
-            tideNorm = np.mean(ncfile.Variables.velo_norm[fI,:,:], 0)
+            tideNorm = np.mean(ncfile.Variables.velo_norm[win1:win2,:,:], 0)
         elif tide == 'ebb':
-            tideNorm = np.mean(ncfile.Variables.velo_norm[fI,:,:], 0)
+            tideNorm = np.mean(ncfile.Variables.velo_norm[win1:win2,:,:], 0)
 
         # create spatially varying color map of mean velocity norm
         if debug:
@@ -334,7 +342,7 @@ def createColorMap(model, var, title='', mesh=True, bounds=[], debug=False):
 
     if debug:
         print '\tcomputing colormap...'
-    cmap = plt.cm.gist_earth
+    cmap = plt.cm.jet
     f = ax.tripcolor(tri, var[:], vmax=cmax, vmin=cmin, cmap=cmap)
 
     if mesh:
