@@ -4,7 +4,7 @@
 """
 Filename = compareSpeeds.py
 Author = Kody Crowell
-Version = 1.1
+Version = 1.3
 
 The program creates a series of plots containing a drifter trajectory superposed
 onto a time-averaged velocity norm of the flood/ebb tide, and a comparative speed-
@@ -48,7 +48,7 @@ from pyseidon import *
 
 PATH_TO_SIM="/EcoII/acadia_uni/workspace/simulated/FVCOM/dngridCSR/drifter_runs/"
 PATH_TO_OBS="/EcoII/acadia_uni/workspace/observed/"
-SAVEPATH="/array/home/119865c/karsten/data/plots/"
+SAVEPATH="/array/home/119865c/karsten/plots/"
 GRID='dngridCSR'
 
 def dn2dt(datenum, debug=False):
@@ -112,7 +112,9 @@ def createPlots(ncfile, files, loc, savepath, sim_name, tight=False, \
     """
 
     sns.set(font="serif")
+
     # find the location centre for flood/tide split calculation
+    # not yet working...
     if loc == 'GP':
         centre = [-66.33906, 44.26898]
         if tight:
@@ -123,6 +125,13 @@ def createPlots(ncfile, files, loc, savepath, sim_name, tight=False, \
         centre = [-65.76000, 44.67751]
         if tight:
             bounds = [-65.775, -65.77, 44.665, 44.69]
+        else:
+            bounds = []
+    elif loc == 'PP':
+        centre = [-66.206924, 44.389368]
+        # find out the tightness required for PP
+        if tight:
+            bounds = [-66.225, -66.195, -44.37, -44.41]
         else:
             bounds = []
 
@@ -137,15 +146,18 @@ def createPlots(ncfile, files, loc, savepath, sim_name, tight=False, \
         print '{} plot(s) will be created...'.format(len(files))
 
     if not plot:
-
+        savepath = savepath + loc + '_' + sim_name
         # creates a subdirectory, so as not to overwrite existing files
         if debug:
             print 'creating new subdirectory...'
         now = datetime.now()
-        now = now.strftime("%H.%M_%B_%d_%Y")
-        if not osp.exists(savepath+now):
-            os.mkdir(savepath+now)
-        savepath = savepath + now + '/'
+        now = now.strftime("%Y%m%d")
+        if not osp.exists(savepath):
+            os.mkdir(savepath)
+        else:
+            savepath = savepath + '/_' + now
+            os.mkdir(savepath)
+        savepath = savepath + '/'
 
     for i, fname in enumerate(files, start=1):
         if debug:
@@ -226,7 +238,7 @@ def plotTimeSeries(fig, valid, loc, debug=False):
         - valid : validation object with drifter and model data
         - loc : location tag
     """
-    mTimes = valid.Variables.struct['mod_time'][:-1]
+    mTimes = valid.Variables.struct['mod_time']
 
     # calculate speed from interpolated and observed date
     oU = valid.Variables.struct['obs_timeseries']['u']
@@ -254,8 +266,8 @@ def plotTimeSeries(fig, valid, loc, debug=False):
     # if a value error is encountered due to the data in pyseidon,
     # do not plot, ignore and move on...
     try:
-        ax2.plot(datetimes, speedS, '#28726e', label='Simulated', linewidth=2)
-        ax2.plot(datetimes, speedO, '#397628', label='Observed', linewidth=2)
+        ax2.plot(datetimes, speedS, 'b--', label='Simulated', linewidth=2)
+        ax2.plot(datetimes, speedO, '#8B0000', label='Observed', linewidth=2)
     except ValueError:
         return False
 
@@ -263,6 +275,8 @@ def plotTimeSeries(fig, valid, loc, debug=False):
     ax2.set_xlabel('Time (HH:MM:SS)')
     ax2.set_title('Observed and Simulated Speed vs. Time')
     plt.legend(loc='upper left')
+    # set the axis limits (hardcoded for consistency)
+    # ax2.set_ylim(0.0, 3.0)
     plt.gcf().autofmt_xdate()
     plt.grid(True)
 
@@ -395,7 +409,7 @@ def parseArgs():
     # required options bad form, users expect options to be optional
     require = parser.add_argument_group('required flag arguments')
     require.add_argument("--loc", '-l', help="defines the region to operate " \
-            + "within.", nargs=1, choices=('GP', 'DG'), required=True)
+            + "within.", nargs=1, choices=('GP', 'DG', 'PP'), required=True)
     require.add_argument("--dir", '-D', nargs=1, help="defines an FVCOM " \
             + "directory. Name is in the form YYYY_Mmm_DD_3D", \
             metavar='dirname', type=str, required=True)

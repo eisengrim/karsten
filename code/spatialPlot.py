@@ -159,7 +159,7 @@ def compareSpeeds(model, dir, matfiles, loc, savedir='', debug=False):
 
         plt.plot(datetimes, speedS, 'b', label='Simulated')
         plt.hold('on')
-        plt.plot(datetimes, speedO, 'r', label='Observed')
+        plt.plot(datetimes, speedO, 'ro', label='Observed')
         plt.suptitle('Observed vs. Simulated Speed vs. Time')
         plt.xlabel('Time (HH:MM:SS)')
         plt.ylabel('Speed (m/s)')
