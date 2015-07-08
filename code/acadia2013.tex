@@ -1,0 +1,284 @@
+\documentclass[landscape,a0paper,fontscale=0.292]{baposter}
+
+\usepackage[vlined]{algorithm2e}
+\usepackage{times}
+\usepackage{calc}
+\usepackage{url}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{relsize}
+\usepackage{multirow}
+\usepackage{booktabs}
+
+\usepackage{graphicx}
+\usepackage{multicol}
+\usepackage[T1]{fontenc}
+\usepackage{ae}
+\usepackage[export]{adjustbox}
+\usepackage{float}
+\usepackage{epstopdf}
+\usepackage{multicol}
+
+
+\graphicspath{{images/}}
+
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ %%%% Some math symbols used in the text
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ % Format 
+ \newcommand{\RotUP}[1]{\begin{sideways}#1\end{sideways}}
+
+
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ % Multicol Settings
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \setlength{\columnsep}{0.7em}
+ \setlength{\columnseprule}{0mm}
+
+
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ % Save space in lists. Use this after the opening of the list
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \newcommand{\compresslist}{%
+ \setlength{\itemsep}{1pt}%
+ \setlength{\parskip}{0pt}%
+ \setlength{\parsep}{0pt}%
+ }
+
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ %input defs file
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \input{defs}
+ 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%input colors
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\definecolor{DarkBlue}{rgb}{0.1,0.1,0.5}
+\definecolor{Red}{rgb}{0.9,0.0,0.1}
+
+ 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Begin of Document
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Here starts the poster
+%%---------------------------------------------------------------------------
+%% Format it to your taste with the options
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{poster}{
+ % Show grid to help with alignment
+ grid=false,
+ % Column spacing
+ colspacing=0.7em,
+ % Color style
+ headerColorOne=DarkBlue!30!Red,
+ headerColorTwo=Red!30!DarkBlue,
+ headerFontColor=white,
+ borderColor=black,
+ % Format of textbox
+ textborder=roundedleft,
+boxshade=plain,
+boxColorOne=white,
+boxColorTwo=cyan,
+ % Format of text header
+ headerborder=open,
+ headershape=roundedright,
+ headershade=plain,
+ background=shadeTB,
+ bgColorOne=cyan!10!white,
+ bgColorTwo=gray,
+ headerheight=0.12\textheight}
+ % Eye Catcher
+ {
+      \includegraphics[width=0.08\linewidth]{atei}
+      \includegraphics[width=0.08\linewidth]{CapeSplitHiking}
+
+ }
+ % Title
+ {\sc\huge High Resolution Numerical Models of the Digby Neck Passages}
+ % Authors
+ {Mitchell O'Flaherty-Sproul, Richard Karsten, Joel Culina\\[1em]
+ {\texttt{073208o@acadiau.ca, rkarsten@acadiau.ca, jculina@acadiau.ca}}}
+ % University logo
+ {
+  \begin{tabular}{r}
+    \includegraphics[height=0.11\textheight]{Acadia_Crest}
+    %\raisebox{0em}[0em][0em]{\includegraphics[height=0.13\textheight]{Acadia_Crest}}
+  \end{tabular}
+ }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Now define the boxes that make up the poster
+%%%---------------------------------------------------------------------------
+%%% Each box has a name and can be placed absolutely or relatively.
+%%% The only inconvenience is that you can only specify a relative position 
+%%% towards an already declared box. So if you have a box attached to the 
+%%% bottom, one to the top and a third one which should be inbetween, you 
+%%% have to specify the top and bottom boxes before you specify the middle 
+%%% box.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  \headerbox{Introduction}{name=intro,column=0,row=0,span=2}{
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{small}Nova Scotians require electricity to be generated from renewable sources, and
+tidal power can play a role in fulfilling this desire.
+Understanding the energetic tidal currents in the Bay of Fundy is a necessary step in implementing tidal power systems.
+Numerical models are a vital tool to increase our understanding.
+Two grids were developed for use in the Finite Volume Coastal Ocean Model (FVCOM).
+The grids, one with a resolution of 15 metres and the other with a resolution of 125 metres
+were combined with high resolution bathymetry and coastlines to create accurate models.
+This poster will present an analysis of the results for Grand Passage.
+\end{small}
+
+\vskip .3cm
+
+\begin{center}
+\begin{tabular}{ccc}
+
+
+ \includegraphics[width=.3\textwidth,frame]{scotMaine_ll_gp_wireframe.jpg}
+&
+  \includegraphics[width=.3\textwidth,frame]{smallisland_gp_wireframe.jpg}
+&
+   \includegraphics[width=.3\textwidth,frame]{dg10m_24_10_ppolex_2_gp_wireframe.jpg}\\
+
+
+ % lowres.jpg: 881x835 pixel, 72dpi, 31.08x29.46 cm, bb=0 0 881 835
+
+\begin{normalsize}Original grid \end{normalsize}&
+\begin{normalsize}125 Metre grid \end{normalsize}&
+ \begin{normalsize}15 Metre grid \end{normalsize}
+\end{tabular}
+
+\end{center}
+
+
+ }
+ 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  \headerbox{ADCP Comparison}{name=adcpcomp,column=0,span=2,below=intro}{   
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{small}Observations were collected as part of the Southwest Nova Scotia Tidal Energy Resource Assessment project. The ADCP data was processed by Justine McMillan.
+Comparisons were performed between the numerical simulation results and observations. 
+The plots below show remarkable agreement between the both models elevation when compared to ADCP observations.
+The 125 metre model is over estimating the amplitude of the speed, the 15 metre model is not.
+The 15 metre model is predicting fluctuations in speed which are essential to understanding the tidal currents in the passages.\end{small}
+
+
+
+\begin{center}
+\vskip -.3cm
+\begin{tabular}{ccc}
+    \includegraphics[clip=true,trim=5cm 0cm 10cm 0cm,width=.3\textwidth,keepaspectratio=true]{dg10m_gp_adcp_locations_2.jpg} &
+       \includegraphics[width=.3\textwidth,keepaspectratio=true]{dg10m_gp_adcp4_to_grid_with_el_sub.eps}&
+       \includegraphics[width=.3\textwidth,keepaspectratio=true]{smallisland_gp_adcp4_to_grid_with_el_sub.eps}\\
+     ADCP locations  & 15 Metre Model & 125 Metre Model
+
+\end{tabular}
+\vskip .2cm
+\begin{footnotesize}(Blue) ADCP data. (Red) Model data. Speed in m/s, elevation in metres.\\ The ADCP locations are plotted over water depth in metres.\end{footnotesize}
+\end{center}
+   
+
+}
+
+
+
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   \headerbox{Transects}{name=transect,column=2,row=0,span=2}{
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ 
+\begin{small} The transect data was collected by mounting an ADCP on a boat and traveling across Grand Passage.
+ The images below are cross sections of Grand Passage north of Peter's Island during flood tide.  
+In the observations there is a large jet of high speed flow on right and a smaller jet on the left. The direction of the 
+flow is northward, with the exception of the flow above the submerged tip of Peter's Island.
+Here the flow curls back around and reverses direction, traveling to the south.
+The 125 metre model does not predict the highlighted behaviours.
+The 15 metre model does predict these behaviours; a high resolution model is necessary to simulate this level of detail.\end{small}
+
+
+\begin{center}
+\vskip -.35cm
+ \begin{tabular}{ccc} 
+
+    \includegraphics[width=.25\textwidth,keepaspectratio=true]{track_1_smallisland_gp_transect_speed_model.jpg}
+    
+  &
+    \includegraphics[width=.25\textwidth,keepaspectratio=true]{track_1_dg10m_gp_transect_speed_model.jpg}
+    
+&
+    \includegraphics[width=.25\textwidth,keepaspectratio=true]{track_1_dg10m_gp_transect_speed_obs.jpg}\\
+  
+    125 Metre Model Speed (m/s) & 15 Metre Model Speed (m/s) & Observed Speed (m/s)\\
+
+    \includegraphics[width=.25\textwidth,keepaspectratio=true]{track_1_smallisland_gp_transect_direction_model.jpg}
+&
+    \includegraphics[width=.25\textwidth,keepaspectratio=true]{track_1_dg10m_gp_transect_direction_model.jpg}
+&
+    \includegraphics[width=.25\textwidth,keepaspectratio=true]{track_1_dg10m_gp_transect_direction_obs.jpg}\\
+  
+ 125 Metre Model Direction ($\deg$) & 15 Metre Model Direction ($\deg$) & Observed Direction ($\deg$)
+\end{tabular}\end{center}
+ 
+ 
+ 
+  }
+
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   \headerbox{Conclusions}{name=references,column=0,span=2,below=adcpcomp,above=bottom}{
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{small}Two numerical models of the Digby Neck passages were developed for use in FVCOM.
+ Both models were accurate, and able to simulate the tidal elevation.
+ The 15 metre model predicted the vertical structure of the flow observed during the transects.
+ The 15 metre model was also used to discern information about physical processes and explained the speed fluctuations which were in the ADCP observations.
+ 
+ Similar analysis were performed on Petit Passage and Digby Gut and can be viewed in \textit{New High and Low Numerical Models of the Tidal Currents Through the Digby Neck Passages} by Mitchell O'Flaherty-Sproul.
+ 
+ %High resolution numerical models provide a valuable tool for understanding the tidal currents in the Bay of Fundy.                                                                                                                
+ \end{small}
+ 
+   }
+
+
+
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    \headerbox{Residual}{name=tracking,column=2,span=2,below=transect,above=bottom}{
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{small} The residual is tidally driven flow that has velocity fluctuations at different periods than the tidal constituents.
+It is related to the interaction of the tides with the bathymetry and geographic features of a region.
+Eddies form as the main tidal flow passes Peter's Island, the eddies are seen clearly in the residual.
+The fluctuations in speed found in both the ADCP observations and numerical results happen as eddies pass over a location.
+Using the numerical model to draw plots of the residual it was determined that the speed fluctuations in the observations are not stochastic turbulence.
+The speed fluctuations are caused by coherent structures moving in the flow.
+
+\end{small}
+     
+\begin{center}
+\vskip -.35cm
+    \begin{tabular}{cc}   
+    \includegraphics[width=0.44\textwidth,keepaspectratio=true]{dg10m_gp_adcp5_to_grid_speed_with_el_sub.jpg}&  
+    \includegraphics[clip=true,trim=50cm 12cm 60cm 70cm,width=0.38\textwidth,keepaspectratio=true]{{residual_step_1264}.jpg}   
+    \end{tabular}
+    
+    
+    
+\begin{footnotesize}Speed in m/s, elevation in m.
+(Blue) ADCP data. (Red) 15 Metre model data. 
+Vertical black line in the left plot is the time which corresponds to the right plot. 
+Left plot are timeseries at the location of the white marker in the right plot.\end{footnotesize}
+    \end{center}
+       
+
+   
+    }
+    
+
+
+
+\end{poster}%
+%
+\end{document}

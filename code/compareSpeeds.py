@@ -4,7 +4,7 @@
 """
 Filename = compareSpeeds.py
 Author = Kody Crowell
-Version = 1.3
+Version = 1.4
 
 The program creates a series of plots containing a drifter trajectory superposed
 onto a time-averaged velocity norm of the flood/ebb tide, and a comparative speed-
@@ -46,7 +46,7 @@ import matplotlib.ticker as tic
 import seaborn as sns
 from pyseidon import *
 
-PATH_TO_SIM="/EcoII/acadia_uni/workspace/simulated/FVCOM/dngridCSR/drifter_runs/"
+PATH_TO_SIM="/EcoII/acadia_uni/workspace/simulated/FVCOM/dngridCSR/drifter_runs/BFRIC_0.012/"
 PATH_TO_OBS="/EcoII/acadia_uni/workspace/observed/"
 SAVEPATH="/array/home/119865c/karsten/plots/"
 GRID='dngridCSR'
@@ -183,7 +183,8 @@ def createPlots(ncfile, files, loc, savepath, sim_name, tight=False, \
         if debug:
             print 'preparing to create colormap...'
         fig = createColorMap(ncfile, tideNorm[0,:], mesh=False, bounds=bounds, \
-         title='Mean Velocity Norm During '+tide.capitalize()+' Tide', debug=debug)
+            title='Mean Velocity Norm During '+tide.capitalize()+' Tide', \
+            debug=debug)
 
         # create validation structure
         if debug:
@@ -201,11 +202,11 @@ def createPlots(ncfile, files, loc, savepath, sim_name, tight=False, \
 
         if debug:
             print 'preparing to plot time series...'
-        result = plotTimeSeries(fig, valid, loc, debug=True)
+        result = plotTimeSeries(fig, valid, loc, debug=debug)
 
         if not result:
             if debug:
-                print '...value error encountered with drifter {}.'.format(i)
+                print '...error encountered with drifter {}.'.format(i)
                 print 'continuing...'
             plt.clf()
             continue
@@ -263,10 +264,12 @@ def plotTimeSeries(fig, valid, loc, debug=False):
     if debug:
         print 'shapes are s: {}, o: {}, t: {}...'.format(speedS.shape, \
                 speedO.shape, datetimes.shape)
+    if speedO.shape[0] < 5:
+        return False
     # if a value error is encountered due to the data in pyseidon,
     # do not plot, ignore and move on...
     try:
-        ax2.plot(datetimes, speedS, 'b--', label='Simulated', linewidth=2)
+        ax2.plot(datetimes, speedS*1.22, 'b--', label='Simulated', linewidth=2)
         ax2.plot(datetimes, speedO, '#8B0000', label='Observed', linewidth=2)
     except ValueError:
         return False
@@ -400,7 +403,7 @@ def parseArgs():
     # creates object to be parsed. adds command line optional arguments
     parser.add_argument("--debug", "-v", "--verbose", action="store_true", \
             help="increases output verbosity.")
-    parser.add_argument("-V", '--version', action='version', version='v1.1')
+    parser.add_argument("-V", '--version', action='version', version='v1.4')
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--show", "--plot", "-s", action="store_true", \
             help='shows the plot(s) WITHOUT saving them.')
