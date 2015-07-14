@@ -23,7 +23,10 @@ import scipy.io as sio
 import os.path as osp
 from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
-import seaborn as sns
+import matplotlib.tri as Tri
+import matplotlib.ticker as tic
+from mpl_toolkits.basemap import Basemap
+# import seaborn as sns
 from pyseidon import *
 
 PATH_TO_SIM="/EcoII/acadia_uni/workspace/simulated/FVCOM/dngridCSR/drifter_runs/"
@@ -87,7 +90,7 @@ def calculateBias(ncfile, files, loc, debug=False):
         - sim_name : name of simulation directory used
     """
 
-    sns.set(font="serif")
+    # sns.set(font="serif")
     if debug:
         print '{} drifters will be analysed...'.format(len(files))
 
@@ -99,6 +102,8 @@ def calculateBias(ncfile, files, loc, debug=False):
     mod_speed = []
     obs_uspeed = []
     mod_uspeed = []
+    o_lon = []
+    o_lat = []
 
     for i, fname in enumerate(files, start=1):
         drifters[i] = fname
@@ -120,6 +125,8 @@ def calculateBias(ncfile, files, loc, debug=False):
         oV = valid.Variables.struct['obs_timeseries']['v']
         mU = valid.Variables.struct['mod_timeseries']['u']
         mV = valid.Variables.struct['mod_timeseries']['v']
+        olon = valid.Variables.struct['lon']
+        olat = valid.Variables.struct['lat']
         uspeedS = np.asarray(np.sqrt(mU**2 + mV**2))
         uspeedO = np.asarray(np.sqrt(oU**2 + oV**2))
 
@@ -147,10 +154,11 @@ def calculateBias(ncfile, files, loc, debug=False):
         mod_speed.extend(speedS)
         obs_uspeed.extend(uspeedO)
         mod_uspeed.extend(uspeedS)
+        o_lon.extend(olon)
+        o_lat.extend(olat)
 
-    return drifters, np.asarray(all_mean), np.asarray(all_sdev), \
-         np.asarray(obs_speed), np.asarray(mod_speed), np.asarray(obs_uspeed), \
-         np.asarray(mod_uspeed), np.asarray(all_bias)
+    return drifters, all_mean, all_sdev, obs_speed, mod_speed, obs_uspeed, \
+         mod_uspeed, all_bias, o_lat, o_lon
 
 
 def parseArgs():
@@ -246,6 +254,122 @@ def setOptions(args):
     return args.loc[0], sim_path, obs_dir, matfiles
 
 
+def createPlots(speedS, speedO, mean, stdev, bias, uspdS, uspdO, lon, lat, \
+        model, debug=debug):
+    """
+    Creates a bunch of plots.
+    """
+    # estimate cube ratio
+    ratio = sps.cbrt(np.mean(np.power(uspdO,3))/np.mean(np.power(uspdS,3)))
+    if debug:
+        print 'speed ratio is: {}'.format(ratio)
+
+    # create plots
+    if debug:
+        print 'creating plots...'
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.scatter(speedS, bias, alpha=0.25)
+    ax.set_xlabel('Model Speed (m/s)')
+    ax.set_ylabel('Bias')
+
+    # determine line of best fit
+    if debug:
+        print '\tdetermining line of best fit...'
+
+    par = np.polyfit(speedS, bias, 1)
+    m = par[-2]
+    b = par [-1]
+
+    variance = np.var(bias)
+    residuals = np.var([(m*xx + b - yy)  for xx,yy \
+            in zip(speedS, bias)])
+    Rsqr = np.round(1-residuals/variance, decimals=5)
+    if debug:
+        print '\tR^2 value for bias plot is {}...'.format(Rsqr)
+    plt.hold('on')
+    ax.plot(speedS, m*speedS+b, 'r-')
+    plt.grid(True)
+
+    # plot cube speeds
+    fi = plt.figure()
+    ax1 = fi.add_subplot(111)
+    speedS3 = np.power(speedS, 3)
+    speedO3 = np.power(speedO, 3)
+    ax1.scatter(speedS3, speedO3, alpha=0.25)
+    ax1.set_xlabel('Model Speed (m/s)')
+    ax1.set_ylabel('Drifter Speed (m/s)')
+
+    coeff = np.polyfit(speedS3, speedO3, 1)
+    m = coeff[-2]
+    b = coeff[-1]
+    if debug:
+        print 'coeffs for cube plot are: \n\tm={}\n\tb={}'.format(m,b)
+    plt.hold('on')
+    ax1.plot(speedS3, m*speedS3+b)
+    variance = np.var(speedO3)
+    residuals = np.var([(m*xx + b - yy)  for xx,yy \
+            in zip(speedS3, speedO3)])
+    Rsqr = np.round(1-residuals/variance, decimals=5)
+    if debug:
+        print 'R^2 for cube plot is {}'.format(Rsqr)
+
+    # plot bias v drifter
+    fig2 = plt.figure()
+    ax2 = fig2.add_subplot(111)
+    ax2.plot(np.arange(1,num_drift+1), mean, 'go')
+    ax2.set_ylabel('Bias')
+    ax2.set_xlabel('Drifter')
+    plt.hold('on')
+    ax2.axhline(y=np.mean(bias), linewidth=2)
+    plt.grid(True)
+
+    # spatial plot of ratios...
+    if debug:
+        print 'starting spatial plot...'
+    glon = model.Grid.lon
+    glat = model.Grid.lat
+    if debug:
+        print 'computing bounding boxes...'
+    bounds = [np.min(glon), np.max(glon), np.min(glat), np.max(glat)]
+
+    if not hasatr(model.Grid, 'triangleLL'):
+        tri = Tri.Triangulation(glon, glat, triangles=model.Grid.trinodes)
+    else:
+        tri = model.Grid.triangleLL
+
+    if debug:
+        print 'creating subplot...'
+    # gif = plt.figure()
+    # xa = gif.add_subplot(111, aspect=(1.0/np.cos(np.mean(glat) * np.pi/180.0)))
+
+    if debug:
+        print 'computing colors...'
+        var3 = np.divide(speedO3, speedS3)
+        color = [str(ratio/255.0) for ratio in var3]
+    if debug:
+        print 'creating map...'
+
+    map = Basemap(projection='merc', resolution = 'h', area_thresh = 0.1, \
+            llcrnrlon=bounds[0], llcrnrlat=bounds[2], \
+            urcrnrlon=bounds[1], urcrnrlat=bounds[3])
+
+    map.drawcoastlines()
+    map.drawcountries()
+    map.bluemarble()
+
+    f = map.scatter(lon, lat, latlon=True, s=100, c=color)
+    cbar = map.colorbar(f, ax=map)
+    cbar.set_label('Speed^3 Ratio', rotation=-90, labelpad=30)
+    scale = 1
+
+    ticks = tic.FuncFormatter(lambda glon, pos: '{0:g}'.format(lon/scale))
+    map.xaxis.set_major_formatter(ticks)
+    map.yaxis.set_major_formatter(ticks)
+    map.set_xlabel('Longitude')
+    map.set_ylabel('Latitiude')
+
+
 if __name__ == '__main__':
 
     # parse the command line args and identify parameters
@@ -270,6 +394,8 @@ if __name__ == '__main__':
     all_uspeedO = []
     all_uspeedS = []
     all_bias = []
+    all_lon = []
+    all_lat = []
     num_drift = 0
 
     for dir_name in sim_path:
@@ -299,8 +425,8 @@ if __name__ == '__main__':
         if not files:
             sys.exit('drifters given are not within model runtime window.')
 
-        drift, mean, std, speedO, speedS, uspdO, uspdS, bias = calculateBias( \
-                ncfile, files, loc, debug=debug)
+        drift, mean, std, speedO, speedS, uspdO, uspdS, bias, lat, lon \
+                = calculateBias(ncfile, files, loc, debug=debug)
 
         if debug:
             print 'adding to cumulative data'
@@ -313,7 +439,12 @@ if __name__ == '__main__':
         all_uspeedS.extend(uspdS)
         all_uspeedO.extend(uspdO)
         all_bias.extend(bias)
+        all_lat.extend(lat)
+        all_lon.extend(lon)
         num_drift = num_drift + len(drift)
+
+    if debug:
+        print 'creating as numpy arrays...'
 
     speedS = np.asarray(all_speedS)
     speedO = np.asarray(all_speedO)
@@ -322,47 +453,11 @@ if __name__ == '__main__':
     bias = np.asarray(all_bias)
     uspdS = np.asarray(all_uspeedS)
     uspdO = np.asarray(all_uspeedO)
+    lat = np.asarray(all_lat)
+    lon = np.asarray(all_lon)
 
-    ratio = sps.cbrt(np.mean(np.power(uspdO,3))/np.mean(np.power(uspdS,3)))
-    if debug:
-        print 'speed ratio is: {}'.format(ratio)
-
-    # create plots
-    if debug:
-        print 'creating plots...'
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-    ax.scatter(speedS, bias, alpha=0.25)
-    ax.set_xlabel('Model Speed (m/s)')
-    ax.set_ylabel('Bias')
-
-    # determine line of best fit
-    if debug:
-        print '\tdetermining line of best fit...'
-
-    par = np.polyfit(speedS, bias, 1)
-    m = par[-2]
-    b = par [-1]
-
-    variance = np.var(bias)
-    residuals = np.var([(m*xx + b - yy)  for xx,yy \
-            in zip(speedS, bias)])
-    Rsqr = np.round(1-residuals/variance, decimals=5)
-    if debug:
-        print '\tR^2 value is {}...'.format(Rsqr)
-
-    plt.hold('on')
-    ax.plot(speedS, m*speedS+b, 'r-')
-    plt.grid(True)
-
-    fig2 = plt.figure()
-    ax2 = fig2.add_subplot(111)
-    ax2.plot(np.arange(1,num_drift+1), mean, 'go')
-    ax2.set_ylabel('Bias')
-    ax2.set_xlabel('Drifter')
-    plt.hold('on')
-    ax2.axhline(y=np.mean(bias), linewidth=2)
-    plt.grid(True)
+    createPlots(speedS, speedO, mean, stdev, bias, uspdS, uspdO, lat, lon, \
+            ncfile, debug=debug)
 
     plt.show()
     if debug:
