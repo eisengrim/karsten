@@ -26,8 +26,9 @@ import matplotlib.pyplot as plt
 import matplotlib.tri as Tri
 import matplotlib.ticker as tic
 from mpl_toolkits.basemap import Basemap
-# import seaborn as sns
+import seaborn as sns
 from pyseidon import *
+import sklearn.preprocessing as skp
 
 PATH_TO_SIM="/EcoII/acadia_uni/workspace/simulated/FVCOM/dngridCSR/drifter_runs/"
 PATH_TO_OBS="/EcoII/acadia_uni/workspace/observed/"
@@ -65,7 +66,7 @@ def driftTimes(name, debug=False):
 
     try:
         if debug:
-            print 'loading file {}...'.format(name)
+            print 'examining drifter file...'
         drft = sio.loadmat(name)
         times = drft['gps_observation'][0][0][0][0]
     except KeyError:
@@ -96,6 +97,7 @@ def calculateBias(ncfile, files, loc, debug=False):
 
     drifters = {}
     all_bias = []
+    all_ubias = []
     all_mean = []
     all_sdev = []
     obs_speed = []
@@ -104,20 +106,26 @@ def calculateBias(ncfile, files, loc, debug=False):
     mod_uspeed = []
     o_lon = []
     o_lat = []
+    lon0 = []
+    lat0 = []
 
     for i, fname in enumerate(files, start=1):
         drifters[i] = fname
         if debug:
-            print 'creating drifter object...'
+            print 'creating drifter object {}...'.format(i)
+            print fname
         drift = Drifter(fname, debug=False)
-
         # create validation structure
         if debug:
-            print 'creating validation object...'
-        valid = Validation(drift, ncfile, flow='sf', debug=False)
+            print '\tcreating validation object...'
+        try:
+            valid = Validation(drift, ncfile, flow='sf', debug=False)
+        except IndexError:
+            print 'cannot create validation object for drifter %i.' % i
+            continue
 
         if debug:
-            print 'extracting information...'
+            print '\textracting information...'
 
         # extract information
         mTimes = valid.Variables.struct['mod_time']
@@ -131,7 +139,7 @@ def calculateBias(ncfile, files, loc, debug=False):
         uspeedO = np.asarray(np.sqrt(oU**2 + oV**2))
 
         if debug:
-            print 'calculating signed speeds...'
+            print '\tcalculating signed speeds...'
 
         # datetimes = np.asarray([dn2dt(time) for time in mTimes])
 
@@ -140,16 +148,24 @@ def calculateBias(ncfile, files, loc, debug=False):
                 print 'drifter {} does not have similar-shaped speeds...'
             continue
 
+        if debug:
+            print '\tcalculating statistics...'
+
         speedO = uspeedO * np.sign(oV)
         speedS = uspeedS * np.sign(mV)
         diffs = np.subtract(uspeedS, uspeedO)
-
+        udiffs = np.subtract(speedS, speedO)
         mean_bias = np.mean(diffs)
         sdev_bias = np.std(diffs)
         all_sdev.append(sdev_bias)
         all_mean.append(mean_bias)
         all_bias.extend(diffs)
+        all_ubias.extend(udiffs)
 
+        if debug:
+            print '\tcompiling data...'
+        lon0.append(olon[0])
+        lat0.append(olat[0])
         obs_speed.extend(speedO)
         mod_speed.extend(speedS)
         obs_uspeed.extend(uspeedO)
@@ -158,7 +174,7 @@ def calculateBias(ncfile, files, loc, debug=False):
         o_lat.extend(olat)
 
     return drifters, all_mean, all_sdev, obs_speed, mod_speed, obs_uspeed, \
-         mod_uspeed, all_bias, o_lat, o_lon
+         mod_uspeed, all_bias, o_lat, o_lon, lon0, lat0, all_ubias
 
 
 def parseArgs():
@@ -167,7 +183,7 @@ def parseArgs():
     """
 
     parser = arp.ArgumentParser(prog='drifterBias.py', description="Opens " \
-            + "an FVCOM file and multiple drifter files and calcualtes the "\
+            + "an FVCOM file and multiple drifter files and calculaltes the "\
             + "mean and standard deviation of the biases.")
     # creates object to be parsed. adds command line optional arguments
     parser.add_argument("--debug", "-v", "--verbose", action="store_true", \
@@ -180,7 +196,12 @@ def parseArgs():
     parser.add_argument("--dir", '-D', nargs=1, help="defines an FVCOM " \
             + "directory. Name is in the form YYYY_Mmm_DD_3D", \
             metavar='dirname', type=str)
+    parser.add_argument("--bfric", '-B', help="select a bottom " \
+            + "friction.", nargs=1, choices=('0.009','0.012','0.015'), \
+            default='0.015', type=str)
     parser._optionals.title = 'optional flag arguments'
+    parser.add_argument("--write", '-w', help='records initial positions of ' \
+            + 'drifters to .dat file.', action="store_true")
 
     args = parser.parse_args()
 
@@ -195,6 +216,10 @@ def parseArgs():
 
     if not args.loc:
         sys.exit('a location tag is needed. type --help for more info.')
+
+    if args.write:
+        # add write for plots...
+        print '\tinitial locations to be recorded...'
 
     return args
 
@@ -223,22 +248,25 @@ def setOptions(args):
     if args.debug:
         print 'looking for fvcom directory(s)...'
 
+    if args.bfric:
+        path2sim = PATH_TO_SIM + 'BFRIC_' + args.bfric + '/'
+
     # locate given fvcom file
     if args.dir:
-        sim_path = [PATH_TO_SIM + args.loc[0] + '/' + args.dir[0]]
-        if not osp.exists(sim_path) or not osp.isdir(sim_path):
+        sim_path = [path2sim + args.loc[0] + '/' + args.dir[0]]
+        if not osp.exists(sim_path[0]) or not osp.isdir(sim_path[0]):
             sys.exit('the directory {} could not be located.'.format(sim_path))
         elif args.debug:
             print '\tfvcom directory found. \n\tloading nc file...'
 
-        sim_path += '/output/subdomain_' + args.loc[0] + '1_0001.nc'
-        if not osp.exists(sim_path) or not osp.isfile(sim_path):
+        sim_path[0] = sim_path[0]+'/output/subdomain_'+args.loc[0]+'1_0001.nc'
+        if not osp.exists(sim_path[0]) or not osp.isfile(sim_path[0]):
             sys.exit('fvcom file not in directory.')
         elif args.debug:
             print '\tfvcom file successfully located.'
     else:
-        dirs = os.listdir(PATH_TO_SIM + args.loc[0] + '/')
-        sim_path = [PATH_TO_SIM + args.loc[0] + '/' + file + \
+        dirs = os.listdir(path2sim + args.loc[0] + '/')
+        sim_path = [path2sim + args.loc[0] + '/' + file + \
             '/output/subdomain_' + args.loc[0] + '1_0001.nc' for file in dirs]
 
         for path in sim_path:
@@ -255,7 +283,7 @@ def setOptions(args):
 
 
 def createPlots(speedS, speedO, mean, stdev, bias, uspdS, uspdO, lon, lat, \
-        model, debug=debug):
+        model, ubias, bfric, debug=False):
     """
     Creates a bunch of plots.
     """
@@ -264,26 +292,29 @@ def createPlots(speedS, speedO, mean, stdev, bias, uspdS, uspdO, lon, lat, \
     if debug:
         print 'speed ratio is: {}'.format(ratio)
 
+    sns.set(font="serif")
     # create plots
     if debug:
         print 'creating plots...'
+
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    ax.scatter(speedS, bias, alpha=0.25)
+    ax.scatter(speedS, ubias, alpha=0.25)
     ax.set_xlabel('Model Speed (m/s)')
     ax.set_ylabel('Bias')
+    ax.set_title('Bias vs. Model Speed for BFRIC={}'.format(bfric))
 
     # determine line of best fit
     if debug:
         print '\tdetermining line of best fit...'
 
-    par = np.polyfit(speedS, bias, 1)
+    par = np.polyfit(speedS, ubias, 1)
     m = par[-2]
     b = par [-1]
 
-    variance = np.var(bias)
+    variance = np.var(ubias)
     residuals = np.var([(m*xx + b - yy)  for xx,yy \
-            in zip(speedS, bias)])
+            in zip(speedS, ubias)])
     Rsqr = np.round(1-residuals/variance, decimals=5)
     if debug:
         print '\tR^2 value for bias plot is {}...'.format(Rsqr)
@@ -299,12 +330,13 @@ def createPlots(speedS, speedO, mean, stdev, bias, uspdS, uspdO, lon, lat, \
     ax1.scatter(speedS3, speedO3, alpha=0.25)
     ax1.set_xlabel('Model Speed (m/s)')
     ax1.set_ylabel('Drifter Speed (m/s)')
+    ax1.set_title('Model and Drifter Speed Comparison for BFRIC={}'.format(bfric))
 
     coeff = np.polyfit(speedS3, speedO3, 1)
     m = coeff[-2]
     b = coeff[-1]
     if debug:
-        print 'coeffs for cube plot are: \n\tm={}\n\tb={}'.format(m,b)
+        print '\tcoeffs for cube plot are: \n\t\tm={}\n\t\tb={}'.format(m,b)
     plt.hold('on')
     ax1.plot(speedS3, m*speedS3+b)
     variance = np.var(speedO3)
@@ -312,62 +344,178 @@ def createPlots(speedS, speedO, mean, stdev, bias, uspdS, uspdO, lon, lat, \
             in zip(speedS3, speedO3)])
     Rsqr = np.round(1-residuals/variance, decimals=5)
     if debug:
-        print 'R^2 for cube plot is {}'.format(Rsqr)
+        print '\tR^2 for cube plot is {}'.format(Rsqr)
 
     # plot bias v drifter
     fig2 = plt.figure()
     ax2 = fig2.add_subplot(111)
-    ax2.plot(np.arange(1,num_drift+1), mean, 'go')
+    if debug:
+        print '\tnum drift is ', np.arange(1,num_drift+1).size
+        print '\tlen of mean is ', len(mean)
+
+    # hacky fix for differing lengths
+    try:
+        ax2.plot(np.arange(1,num_drift+1), mean, 'go')
+    except:
+        ax2.plot(np.arange(1,num_drift), mean, 'go')
     ax2.set_ylabel('Bias')
     ax2.set_xlabel('Drifter')
+    ax2.set_title('Individual Bias vs Drifter for BFRIC={}'.format(bfric))
     plt.hold('on')
     ax2.axhline(y=np.mean(bias), linewidth=2)
     plt.grid(True)
 
     # spatial plot of ratios...
     if debug:
-        print 'starting spatial plot...'
+        print '\tstarting spatial plot...'
     glon = model.Grid.lon
     glat = model.Grid.lat
     if debug:
-        print 'computing bounding boxes...'
+        print '\tcomputing bounding boxes...'
     bounds = [np.min(glon), np.max(glon), np.min(glat), np.max(glat)]
 
-    if not hasatr(model.Grid, 'triangleLL'):
-        tri = Tri.Triangulation(glon, glat, triangles=model.Grid.trinodes)
+
+    uspeedO3 = np.power(uspdO, 3)
+    uspeedS3 = np.power(uspdS, 3)
+    if debug:
+        print '\tcomputing colors...'
+    var3 = np.divide(uspeedO3, uspeedS3)
+    # color = np.subtract(var3, np.min(var3)) / (np.max(var3) - np.max(var3))
+
+    if debug:
+        print '\tcreating map...'
+        print '\tcreating scatter plot...'
+	f=plt.figure()
+	ax = f.add_axes([.125,.1,.775,.8])
+	ax.triplot(glon, glat, model.Grid.trinodes, zorder=10, lw=10)
+	clim=np.percentile(var3,[5,95])
+	cb = ax.scatter(lon, lat, c=var3, s=10, edgecolor='None', \
+            vmin=clim[0], vmax=clim[1], zorder=20)
+    plt.colorbar(cb)
+    if debug:
+        print '\tcreating color bar...'
+
+
+    # map = Basemap(projection='merc', resolution = 'h', area_thresh = 0.1, \
+    #    llcrnrlon=bounds[0], llcrnrlat=bounds[2], \
+    #    urcrnrlon=bounds[1], urcrnrlat=bounds[3])
+
+    # map = createColorMap(model, np.zeros(len(model.Grid.h)), title='Drifter ' \
+    #        + 'Speed Ratio', mesh=False, debug=True)
+    # map.hold('on')
+
+    # model.Plots.colormap_var(np.zeros(len(model.Grid.h)), mesh=False, hold=True,
+    #         title='Drifter Speed Ratio', debug=True)
+    # plt.hold('on')
+
+    # if debug:
+    #    print '\tdrawing coastlines and countries...'
+    # map.drawcoastlines()
+    # map.fillcontinents(color='coral', lake_color='aqua')
+
+    # cbar = map.colorbar(f)
+    # cbar.set_label('Speed^3 Ratio', rotation=-90, labelpad=30)
+
+
+def createColorMap(model, var, title='', mesh=True, bounds=[], debug=False):
+    """
+    2D colormap plot of a given variable and mesh. This function is adapted from
+    PySeidon's colormap_var, except it is customized to add the plot to an
+    existing figure. Holds the plot.
+
+    input:
+        - var = gridded variable, 1D numpy array (nele or nnode)
+        - title = plot title, string
+        - mesh = boolean, True with mesh, False without mesh
+        - bounds = list, constricted region subdomain in form of
+            [lon.min, lon.max, lat.min, lat.max]
+    returns:
+        - figure for future plotting
+    """
+
+    if debug:
+        print '\tplotting grid...'
+    # figure if var has nele or nnode dimensions
+    if var.shape[0] == model.Grid.nele:
+        dim = model.Grid.nele
+    elif var.shape[0] == model.Grid.nnode:
+        dim = model.Grid.nnode
+    else:
+        sys.exit('variable has the wrong dimension, shape not equal to grid ' \
+                + 'nummber of elements or nodes')
+
+    # bounding box nodes, elements and variables
+    lon = model.Grid.lon[:]
+    lat = model.Grid.lat[:]
+    if debug:
+        print '\tcomputing bounding box...'
+    if bounds:
+        bb = bounds
+    else:
+        bb = [lon.min(), lon.max(), lat.min(), lat.max()]
+
+    if not hasattr(model.Grid, 'triangleLL'):
+        # mesh triangle
+        if debug:
+            print '\tcomputing triangulation...'
+        trinodes = model.Grid.trinodes[:]
+        tri = Tri.Triangulation(lon, lat, triangles=trinodes)
     else:
         tri = model.Grid.triangleLL
 
+    # setting limits and levels of colormap
     if debug:
-        print 'creating subplot...'
-    # gif = plt.figure()
-    # xa = gif.add_subplot(111, aspect=(1.0/np.cos(np.mean(glat) * np.pi/180.0)))
+        print '\tcomputing cmin...'
+    cmin = var[:].min()
+    if debug:
+        print '\tcomputing cmax...'
+    cmax = var[:].max()
+    step = (cmax-cmin) / 50.0
+
+    # depth contours to plot
+    levels = np.arange(cmin, (cmax+step), step)
+
+    # define figure window
+    if debug:
+        print '\tcreating subplot...'
+
+    fig = plt.figure(figsize=(18,10))
+    plt.rc('font', size='22')
+    ax = fig.add_subplot(122, aspect=(1.0/np.cos(np.mean(lat) * np.pi/180.0)))
 
     if debug:
-        print 'computing colors...'
-        var3 = np.divide(speedO3, speedS3)
-        color = [str(ratio/255.0) for ratio in var3]
-    if debug:
-        print 'creating map...'
+        print '\tcomputing colormap...'
+    cmap = plt.cm.jet
+    f = ax.tripcolor(tri, var[:], vmax=cmax, vmin=cmin, cmap=cmap)
 
-    map = Basemap(projection='merc', resolution = 'h', area_thresh = 0.1, \
-            llcrnrlon=bounds[0], llcrnrlat=bounds[2], \
-            urcrnrlon=bounds[1], urcrnrlat=bounds[3])
+    if mesh:
+        plt.triplot(tri, color='white', linewidth=0.5)
 
-    map.drawcoastlines()
-    map.drawcountries()
-    map.bluemarble()
-
-    f = map.scatter(lon, lat, latlon=True, s=100, c=color)
-    cbar = map.colorbar(f, ax=map)
-    cbar.set_label('Speed^3 Ratio', rotation=-90, labelpad=30)
+    # label and axis parameters
+    ax.set_xlabel('Longitude')
+    ax.set_ylabel('Latitude')
+    ax.patch.set_facecolor('0.5')
+    # cbar = fig.colorbar(f, ax=ax)
+    # cbar.set_label(title, rotation=-90, labelpad=30)
     scale = 1
 
-    ticks = tic.FuncFormatter(lambda glon, pos: '{0:g}'.format(lon/scale))
-    map.xaxis.set_major_formatter(ticks)
-    map.yaxis.set_major_formatter(ticks)
-    map.set_xlabel('Longitude')
-    map.set_ylabel('Latitiude')
+    # ticker for coordinate degree axis
+    if debug:
+        print '\tconfiguring axis...'
+    ticks = tic.FuncFormatter(lambda lon, pos: '{0:g}'.format(lon/scale))
+    ax.xaxis.set_major_formatter(ticks)
+    ax.yaxis.set_major_formatter(ticks)
+    ax.set_xlim([bb[0], bb[1]])
+    ax.set_ylim([bb[2], bb[3]])
+    ax.grid()
+    plt.title('Observed Drifter Trajectory')
+
+    plt.hold('on')
+
+    if debug:
+        print '...colormap passed.'
+
+    return fig
 
 
 if __name__ == '__main__':
@@ -397,6 +545,9 @@ if __name__ == '__main__':
     all_lon = []
     all_lat = []
     num_drift = 0
+    all_lon0 = []
+    all_lat0 = []
+    all_ubias = []
 
     for dir_name in sim_path:
         ncfile = FVCOM(dir_name, debug=False)
@@ -425,11 +576,11 @@ if __name__ == '__main__':
         if not files:
             sys.exit('drifters given are not within model runtime window.')
 
-        drift, mean, std, speedO, speedS, uspdO, uspdS, bias, lat, lon \
-                = calculateBias(ncfile, files, loc, debug=debug)
+        drift, mean, std, speedO, speedS, uspdO, uspdS, bias, lat, lon, \
+                lon0, lat0, ubias = calculateBias(ncfile, files, loc, debug=debug)
 
         if debug:
-            print 'adding to cumulative data'
+            print 'adding to cumulative data...'
 
         drifters['dir_name'] = drift
         all_mean.extend(mean)
@@ -439,9 +590,15 @@ if __name__ == '__main__':
         all_uspeedS.extend(uspdS)
         all_uspeedO.extend(uspdO)
         all_bias.extend(bias)
+        all_ubias.extend(ubias)
         all_lat.extend(lat)
         all_lon.extend(lon)
+        all_lon0.extend(lon0)
+        all_lat0.extend(lat0)
         num_drift = num_drift + len(drift)
+
+        if debug:
+            print 'continuing loop...'
 
     if debug:
         print 'creating as numpy arrays...'
@@ -451,14 +608,25 @@ if __name__ == '__main__':
     mean = np.asarray(all_mean)
     stdev = np.asarray(all_std)
     bias = np.asarray(all_bias)
+    ubias = np.asarray(all_ubias)
     uspdS = np.asarray(all_uspeedS)
     uspdO = np.asarray(all_uspeedO)
     lat = np.asarray(all_lat)
     lon = np.asarray(all_lon)
 
+    # create plots and do stats
     createPlots(speedS, speedO, mean, stdev, bias, uspdS, uspdO, lat, lon, \
-            ncfile, debug=debug)
-
+            ncfile, ubias, args.bfric, debug=debug)
     plt.show()
+
+    # write init loc data to text file
+    if args.write:
+        if debug:
+            print 'recording initial positions...'
+
+        with open('init_locs_'+loc+'.dat', 'w') as f:
+            for lon, lat in zip(all_lon0, all_lat0):
+                f.write(str(lon) + ' ' + str(lat) + '\n')
+
     if debug:
         print '...all done!'

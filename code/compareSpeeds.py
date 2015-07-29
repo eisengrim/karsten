@@ -94,7 +94,7 @@ def driftTimes(name, debug=False):
     return start, end
 
 
-def createPlots(ncfile, files, loc, savepath, sim_name, tight=False, \
+def createPlots(ncfile, files, loc, savepath, sim_name, bfric, tight=False, \
                                                     debug=False, plot=False):
     """
     Compiles necessary data, creates plots and saves / shows them all. The plot is
@@ -107,6 +107,7 @@ def createPlots(ncfile, files, loc, savepath, sim_name, tight=False, \
         - loc : location tag
         - savepath : savepath to be used (if plot=False)
         - sim_name : name of simulation directory used
+        - bfric : bottom friction value
         - plot : True if plot is shown and not saved
         - tight : boolean, True if subdomain region is to be constricted
     """
@@ -202,7 +203,7 @@ def createPlots(ncfile, files, loc, savepath, sim_name, tight=False, \
 
         if debug:
             print 'preparing to plot time series...'
-        result = plotTimeSeries(fig, valid, loc, debug=debug)
+        result = plotTimeSeries(fig, valid, loc, bfric, debug=debug)
 
         if not result:
             if debug:
@@ -228,7 +229,7 @@ def createPlots(ncfile, files, loc, savepath, sim_name, tight=False, \
         plt.clf()
 
 
-def plotTimeSeries(fig, valid, loc, debug=False):
+def plotTimeSeries(fig, valid, loc, bfric, debug=False):
     """
     Creates a comparative speed vs. time graph from a model object and a drifter
     object, passed as a validation structure from PySeidon. This function is also
@@ -276,7 +277,7 @@ def plotTimeSeries(fig, valid, loc, debug=False):
 
     ax2.set_ylabel('Speed (m/s)')
     ax2.set_xlabel('Time (HH:MM:SS)')
-    ax2.set_title('Observed and Simulated Speed vs. Time')
+    ax2.set_title('Observed, Simulated Speed-Time Plot for BFRIC={}'.format(bfric))
     plt.legend(loc='upper left')
     # set the axis limits (hardcoded for consistency)
     # ax2.set_ylim(0.0, 3.0)
@@ -421,6 +422,9 @@ def parseArgs():
             type=str, default=False)
     parser.add_argument("--tight", '-t', action='store_true', \
             help="constricts the subdomain region when plotting spatially.")
+    parser.add_argument("--bfric", '-B', help='define a bottom friction.', \
+            nargs=1, choices=('0.009','0.012','0.015'), default='0.015', \
+            type=str)
     parser._optionals.title = 'optional flag arguments'
 
     args = parser.parse_args()
@@ -437,6 +441,7 @@ def parseArgs():
             print '\tlocation tag set to {}...'.format(args.loc)
         if args.dir:
             print '\tfvcom directory set to {}...'.format(args.dir)
+        print '\tbottom friction is {}...'.format(args.bfric)
 
     if not args.loc:
         sys.exit('a location tag is needed. type --help for more info.')
@@ -500,8 +505,11 @@ def setOptions(args):
     if args.debug:
         print 'looking for fvcom directory...'
 
+    if args.bfric:
+        path2sim = PATH_TO_SIM + 'BFRIC_' + args.bfric + '/'
+
     # locate given fvcom file
-    sim_path = PATH_TO_SIM + args.loc[0] + '/' + args.dir[0]
+    sim_path = path2sim + args.loc[0] + '/' + args.dir[0]
     if not osp.exists(sim_path) or not osp.isdir(sim_path):
         sys.exit('the directory {} could not be located.'.format(sim_path))
     elif args.debug:
@@ -531,6 +539,7 @@ if __name__ == '__main__':
                 '\nobs_path: ', obs_dir, '\nmatfiles selected? ', opt
 
         print '\nloading fvcom object...'
+
     ncfile = FVCOM(sim_path, debug=False)
 
     # find the relevant time window to work in
@@ -580,8 +589,9 @@ if __name__ == '__main__':
     else:
         plot=True
 
-    createPlots(ncfile, files, loc, savepath, args_dir, debug=debug, plot=plot, \
-                                                            tight=tight)
+    createPlots(ncfile, files, loc, savepath, args_dir, args.bfric, \
+            debug=debug, plot=plot, tight=tight)
+
     plt.close()
     if debug:
         print '...all done!'

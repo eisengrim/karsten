@@ -7,15 +7,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 from interpolation_utils import *
 
-PATH_TO_SIM_FILE="/EcoII/acadia_uni/workspace/simulated/FVCOM/dngridCSR/drifter_runs/DG/2013_Nov_05_3D/output/subdomain_DG1_0001.nc"
+PATH_TO_SIM_FILE="/EcoII/acadia_uni/workspace/simulated/FVCOM/dngridCSR/" \
+   + "drifter_runs/BFRIC_0.015/DG/2013_Nov_05_3D/output/subdomain_DG1_0001.nc"
 PATH_TO_OBS_FILE="/EcoII/acadia_uni/workspace/observed/DG/Drifter/DG_E_20131105_78_1_001_S5.mat"
 LOCATION = 'DG'
 
 """
 The program plots a drifter trajectory taken from a drifter class onto a
 spatial varying map of the flow speed (specifically, the flood or ebb
-velocity norm). Assumes the FVCOM and Drifter objects already loaded.
-The program takes a location tag and works around that domain.
+velocity norm). The program takes a location tag and works around that domain.
 """
 
 
@@ -73,8 +73,7 @@ if __name__ == '__main__':
     u = drift.Variables.u
     v = drift.Variables.v
 
-    plt.quiver(x,y,u,v)
-    # plt.scatter(x,y)
+    plt.scatter(x,y)
     plt.show()
 
 
