@@ -23,9 +23,9 @@ from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
 import matplotlib.tri as Tri
 import matplotlib.ticker as tic
-from mpl_toolkits.basemap import Basemap
 import seaborn as sns
 from pyseidon import *
+from interpolation_utils import *
 import sklearn.preprocessing as skp
 
 PATH2SIM="/EcoII/acadia_uni/workspace/simulated/FVCOM/dngridCSR/drifter_runs/"
@@ -132,8 +132,10 @@ def calculateBias(ncfile, files, loc, debug=False):
         mV = valid.Variables.struct['mod_timeseries']['v']
         olon = valid.Variables.struct['lon']
         olat = valid.Variables.struct['lat']
+        mlon = valid.Variables.struct[
         uspeedS = np.asarray(np.sqrt(mU**2 + mV**2))
         uspeedO = np.asarray(np.sqrt(oU**2 + oV**2))
+        depth = interp_at_point(ncfile.Grid.h, olon, olat,
 
         if debug:
             print '\tcalculating signed speeds...'
@@ -187,7 +189,8 @@ def calculateBias(ncfile, files, loc, debug=False):
 
 def parseArgs():
     """
-    Parses, identifies and resolves command line arguments.
+    Parses, identifies and resolves command line arguments. Only required args are
+    a region tag and a save path.
     """
 
     parser = arp.ArgumentParser(prog='drifterBias.py', description="Opens " \
@@ -210,13 +213,10 @@ def parseArgs():
             + "roughness.", nargs=1, choices=('0.009', '0.012', '0.015'), \
             default='0.015', required=True, type=str)
     # save or show data
-    parser.add_argument("--plot", "-p", action="store_true", help='generate ' \
-            + ' plots and saves them to savepath.')
-    parser.add_argument("--show", '-s', action='store_true', help = "shows " \
-            + 'the generated plots.')
-    parser.add_argument("--savepath", '-sp', nargs='?', help="defines an  " \
-            + "alternate savepath.", metavar='savedir', type=str, \
-            default=SAVEPATH)
+    parser.add_argument("--noplot", "-x", action="store_true", help='generates ' \
+            + 'no plots, just calculates statistics.')
+    require.add_argument("--savepath", '-p', nargs='?', help="defines an  " \
+            + "alternate savepath.", metavar='savedir', type=str, required=True)
     parser._optionals.title = 'optional flag arguments'
     # option to write initial positions
     parser.add_argument("--write", '-w', help='records initial positions of ' \
@@ -230,7 +230,7 @@ def parseArgs():
 
         if args.loc:
             print '\tlocation tag set to {}...'.format(args.loc)
-        
+
     if not args.loc:
         sys.exit('a location tag is needed. type --help for more info.')
 
@@ -263,7 +263,7 @@ def setOptions(args):
         matfiles = [obs_dir + file for file in args.drifter]
     else:
         matfiles = [obs_dir + file for file in os.listdir(obs_dir)]
-        
+
     if len(matfiles) == 0:
         sys.exit('no drifter files found.')
     elif args.debug:
@@ -280,7 +280,7 @@ def setOptions(args):
         dirs = args.dir
     else:
         dirs = os.listdir(path + args.loc[0] + '/')
-        
+
     sim_path = [path2sim + args.loc[0] + '/' + file + '/output/subdomain_' \
                 + args.loc[0] + '1_0001.nc' for file in dirs]
 
@@ -294,7 +294,29 @@ def setOptions(args):
     elif args.debug:
         print '\tnc files found.'
 
-    return args.loc[0], sim_path, obs_dir, matfiles
+    # look for save directory
+    # does the savepath exist?
+    if args.noplot:
+        plot=False
+     else:
+        plot=True
+
+    savepath = args.savepath
+    if savepath[-1] != '/':
+        savepath = savepath + '/'
+    if debug:
+        print 'savepath selected: ', savepath
+        print 'looking for save directory...'
+    if not osp.exists(savepath):
+        if debug:
+            print 'directory not found.'
+            print 'creating directories...'
+            print 'directory {} successfully created.'.format(savepath)
+        os.makedirs(savepath)
+    elif not osp.isdir(savepath):
+        sys.exit('{} is not a directory.'.format(savepath))
+
+    return args.loc[0], sim_path, obs_dir, matfiles, plot, savepath
 
 
 if __name__ == '__main__':
@@ -304,13 +326,14 @@ if __name__ == '__main__':
     args = parseArgs()
     debug = args.debug
 
-    loc, sim_path, obs_dir, obs_files = setOptions(args)
+    loc, sim_path, obs_dir, obs_files, plot, savepath = setOptions(args)
 
     if debug:
         print '\n--parameters selected--'
         print 'location: ', loc, '\nsim_path: ', sim_path, \
                 '\nobs_path: ', obs_dir
 
+    # initialize cumulative data arrays
     drifters = {}
     all_mean = []
     all_std = []
@@ -325,7 +348,7 @@ if __name__ == '__main__':
     all_lat0 = []
     all_ubias = []
     num_drift = 0
-    
+
     for dir_name in sim_path:
         print '\nloading fvcom object...'
         ncfile = FVCOM(dir_name, debug=False)
@@ -334,7 +357,7 @@ if __name__ == '__main__':
 
         # find the relevant time window to work in
         mTimes = ncfile.Variables.matlabTime[:]
-        mStart, mEnd= float(mTimes[0]), float(mTimes[-1])
+        mStart, mEnd = float(mTimes[0]), float(mTimes[-1])
 
         if debug:
             print 'model time is from {} to {}.'.format(mStart, mEnd)
@@ -354,7 +377,7 @@ if __name__ == '__main__':
         if not files:
             sys.exit('drifters given are not within model runtime window.')
 
-        # CONTINUE HERE
+        # CONTINUE HERE #######################################################
         drift, mean, std, speedO, speedS, uspdO, uspdS, bias, lat, lon, \
                 lon0, lat0, ubias = calculateBias(ncfile, files, loc, debug=debug)
 

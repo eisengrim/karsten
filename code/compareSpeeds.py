@@ -46,7 +46,7 @@ import matplotlib.ticker as tic
 import seaborn as sns
 from pyseidon import *
 
-PATH_TO_SIM="/EcoII/acadia_uni/workspace/simulated/FVCOM/dngridCSR/drifter_runs/BFRIC_0.012/"
+PATH_TO_SIM="/EcoII/acadia_uni/workspace/simulated/FVCOM/dngridCSR/drifter_runs/"
 PATH_TO_OBS="/EcoII/acadia_uni/workspace/observed/"
 SAVEPATH="/array/home/119865c/karsten/plots/"
 GRID='dngridCSR'
@@ -147,17 +147,17 @@ def createPlots(ncfile, files, loc, savepath, sim_name, bfric, tight=False, \
         print '{} plot(s) will be created...'.format(len(files))
 
     if not plot:
-        savepath = savepath + loc + '_' + sim_name
+        savepath = savepath + 'bfric_' + bfric + '/' + loc + '_' + sim_name
         # creates a subdirectory, so as not to overwrite existing files
         if debug:
             print 'creating new subdirectory...'
         now = datetime.now()
         now = now.strftime("%Y%m%d")
         if not osp.exists(savepath):
-            os.mkdir(savepath)
+            os.makedirs(savepath)
         else:
             savepath = savepath + '/_' + now
-            os.mkdir(savepath)
+            os.makedirs(savepath)
         savepath = savepath + '/'
 
     for i, fname in enumerate(files, start=1):
@@ -186,11 +186,18 @@ def createPlots(ncfile, files, loc, savepath, sim_name, bfric, tight=False, \
         fig = createColorMap(ncfile, tideNorm[0,:], mesh=False, bounds=bounds, \
             title='Mean Velocity Norm During '+tide.capitalize()+' Tide', \
             debug=debug)
+        # create title
+        fig.suptitle('Data from ' + fname, fontsize=14)
 
         # create validation structure
         if debug:
             print 'creating validation object...'
-        valid = Validation(drift, ncfile, flow='sf', debug=False)
+
+        try:
+            valid = Validation(drift, ncfile, flow='sf', debug=False)
+        except IndexError:
+            print 'cannot create validation object for drifter %i.' % i
+            continue
 
         x = drift.Variables.lon
         y = drift.Variables.lat
@@ -221,7 +228,10 @@ def createPlots(ncfile, files, loc, savepath, sim_name, bfric, tight=False, \
                 print 'saving plot...'
             savename = loc + '_' + sim_name + '_' + GRID + '_d' + str(i) + '.png'
 
+            print savepath
+            print savename
             plt.savefig(savepath + savename)
+
             if debug:
                 print '...plot saved to: ', savepath+savename
 
@@ -508,10 +518,17 @@ def setOptions(args):
     if args.bfric:
         path2sim = PATH_TO_SIM + 'BFRIC_' + args.bfric + '/'
 
+    # hacky fix to an odd bug
+    if args.dir[0][-1] == ':':
+        args.dir[0] = args.dir[0][:-1]
+
     # locate given fvcom file
     sim_path = path2sim + args.loc[0] + '/' + args.dir[0]
-    if not osp.exists(sim_path) or not osp.isdir(sim_path):
+
+    if not osp.exists(sim_path):
         sys.exit('the directory {} could not be located.'.format(sim_path))
+    elif not osp.isdir(sim_path):
+        sys.exit('{} is not a directory.'.format(sim_path))
     elif args.debug:
         print '\tfvcom directory found. \n\tloading nc file...'
 
