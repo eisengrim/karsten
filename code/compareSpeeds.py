@@ -95,7 +95,7 @@ def driftTimes(name, debug=False):
 
 
 def createPlots(ncfile, files, loc, savepath, sim_name, bfric, tight=False, \
-                                                    debug=False, plot=False):
+                                         ratio=1.0, debug=False, plot=False):
     """
     Compiles necessary data, creates plots and saves / shows them all. The plot is
     a spatially varying color map of speed with a drifter trajectory superposed and
@@ -110,6 +110,7 @@ def createPlots(ncfile, files, loc, savepath, sim_name, bfric, tight=False, \
         - bfric : bottom friction value
         - plot : True if plot is shown and not saved
         - tight : boolean, True if subdomain region is to be constricted
+        - ratio : ratio to adjust model data
     """
 
     sns.set(font="serif")
@@ -210,7 +211,7 @@ def createPlots(ncfile, files, loc, savepath, sim_name, bfric, tight=False, \
 
         if debug:
             print 'preparing to plot time series...'
-        result = plotTimeSeries(fig, valid, loc, bfric, debug=debug)
+        result = plotTimeSeries(fig, valid, loc, bfric, ratio=ratio, debug=debug)
 
         if not result:
             if debug:
@@ -239,7 +240,7 @@ def createPlots(ncfile, files, loc, savepath, sim_name, bfric, tight=False, \
         plt.clf()
 
 
-def plotTimeSeries(fig, valid, loc, bfric, debug=False):
+def plotTimeSeries(fig, valid, loc, bfric, ratio=1.0, debug=False):
     """
     Creates a comparative speed vs. time graph from a model object and a drifter
     object, passed as a validation structure from PySeidon. This function is also
@@ -263,6 +264,11 @@ def plotTimeSeries(fig, valid, loc, bfric, debug=False):
     speedS = np.asarray(np.sqrt(mU**2 + mV**2))
     speedO = np.asarray(np.sqrt(oU**2 + oV**2))
 
+    # ratio addition
+    if debug:
+        print '\tadding ratio adjustments...'
+    speedS = speedS * ratio
+
     datetimes = np.asarray([dn2dt(time) for time in mTimes])
 
     if debug:
@@ -280,7 +286,7 @@ def plotTimeSeries(fig, valid, loc, bfric, debug=False):
     # if a value error is encountered due to the data in pyseidon,
     # do not plot, ignore and move on...
     try:
-        ax2.plot(datetimes, speedS*1.22, 'b--', label='Simulated', linewidth=2)
+        ax2.plot(datetimes, speedS, 'b--', label='Simulated', linewidth=2)
         ax2.plot(datetimes, speedO, '#8B0000', label='Observed', linewidth=2)
     except ValueError:
         return False
@@ -435,6 +441,8 @@ def parseArgs():
     parser.add_argument("--bfric", '-B', help='define a bottom friction.', \
             nargs=1, choices=('0.009','0.012','0.015'), default='0.015', \
             type=str)
+    parser.add_argument("--ratio", help='use a ratio adjustment', nargs=1, \
+            default=1.0, metavar='ratio', type=float)
     parser._optionals.title = 'optional flag arguments'
 
     args = parser.parse_args()
@@ -468,6 +476,9 @@ def parseArgs():
         tag = 'yes'
     else:
         tag = 'no'
+
+    if args.ratio:
+        print \t'ratio selected is {}'.format(args.ratio)
 
     return args, tag
 
@@ -607,7 +618,7 @@ if __name__ == '__main__':
         plot=True
 
     createPlots(ncfile, files, loc, savepath, args_dir, args.bfric, \
-            debug=debug, plot=plot, tight=tight)
+            debug=debug, plot=plot, tight=tight, ratio=args.ratio)
 
     plt.close()
     if debug:
