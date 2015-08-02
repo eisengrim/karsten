@@ -20,7 +20,7 @@ Usage:
 $ python compareSpeeds.py --loc/-l LOCATION_TAG \
          --dir/-D FVCOM_DIRECTORY_NAME_AS_DATE  [--show/-s] \
          [--savepath/-sp SAVEPATH] [--drifter/-d DRIFT_FILE(S)] \
-         [--debug/--verbose/-v] [--version/-V]
+         [--debug/--verbose/-v] [--version/-V] [--ratio]
 
 Examples:
 $ python compareSpeeds.py --help
@@ -149,6 +149,9 @@ def createPlots(ncfile, files, loc, savepath, sim_name, bfric, tight=False, \
 
     if not plot:
         savepath = savepath + 'bfric_' + bfric + '/' + loc + '_' + sim_name
+        if ratio != 1.0:
+            savepath = savepath + '/with_ratio_{}'.format(str(ratio))
+
         # creates a subdirectory, so as not to overwrite existing files
         if debug:
             print 'creating new subdirectory...'
@@ -478,7 +481,7 @@ def parseArgs():
         tag = 'no'
 
     if args.ratio:
-        print \t'ratio selected is {}'.format(args.ratio)
+        print '\tratio selected is {}'.format(args.ratio)
 
     return args, tag
 
