@@ -6,9 +6,8 @@ Filename = analyzeDrifters.py
 Author = Kody Crowell
 Version = 1.4
 
-This code is an amalgamation of previously written code such as drifterBias.py,
-spatialPlot.py, compareSpeeds.py and quickPlotDrifter.py. Several functions to
-run various stats / plot data are combined and chosen using command line input.
+This code is an updated version of drifterBias.py, tasked with running various
+stats that are returned to be used in the command line, and then plotted.
 """
 
 # library imports
@@ -105,6 +104,11 @@ def calculateBias(ncfile, files, loc, debug=False):
     o_lat = []
     lon0 = []
     lat0 = []
+    depths = []
+    all_erru = []
+    all_errv = []
+    all_err_mag = []
+    all_err_dir = []
 
     for i, fname in enumerate(files, start=1):
         drifters[i] = fname
@@ -132,10 +136,20 @@ def calculateBias(ncfile, files, loc, debug=False):
         mV = valid.Variables.struct['mod_timeseries']['v']
         olon = valid.Variables.struct['lon']
         olat = valid.Variables.struct['lat']
-        mlon = valid.Variables.struct[
-        uspeedS = np.asarray(np.sqrt(mU**2 + mV**2))
-        uspeedO = np.asarray(np.sqrt(oU**2 + oV**2))
-        depth = interp_at_point(ncfile.Grid.h, olon, olat,
+        mlon = ncfile.Grid.lon
+        mlat = ncfile.Grid.lat
+        mlonc = ncfile.Grid.lonc
+        mlatc = ncfile.Grid.latc
+        # how to get mlon, mlat?
+        uspeedS = np.sqrt(mU**2 + mV**2)
+        uspeedO = np.sqrt(oU**2 + oV**2)
+
+        # index finder is only in dvt branch
+        # indices = [ncfile.Util2D.index_finder(j,k) for j, k in zip(olon, olat)]
+        # c_pts = closest_point(olon, olat, mlon, mlat, mlonc, mlatc, tri??)
+        c_pts = closest_points(olon, olat, mlon, mlat)
+        #indices = np.where(
+        depth = ncfile.Grid.h[indices]
 
         if debug:
             print '\tcalculating signed speeds...'
@@ -156,10 +170,20 @@ def calculateBias(ncfile, files, loc, debug=False):
         udiffs = np.subtract(speedS, speedO)
         mean_bias = np.mean(diffs)
         sdev_bias = np.std(diffs)
+        erru = np.subtract(mU, oU)
+        errv = np.subtract(mV, oV)
+        err_mag = np.sqrt(erru**2 + errv**2)
+        err_dir = np.arctan(np.divide(errv, erru))/np.pi * 180
+
         all_sdev.append(sdev_bias)
         all_mean.append(mean_bias)
         all_bias.extend(diffs)
         all_ubias.extend(udiffs)
+        all_erru.extend(erru)
+        all_errv.extend(errv)
+        all_err_mag.extend(err_mag)
+        all_err_dir.extend(err_dir)
+        depths.extend(depth)
 
         if debug:
             print '\tcompiling data...'
@@ -173,18 +197,8 @@ def calculateBias(ncfile, files, loc, debug=False):
         o_lat.extend(olat)
 
     return drifters, all_mean, all_sdev, obs_speed, mod_speed, obs_uspeed, \
-         mod_uspeed, all_bias, o_lat, o_lon, lon0, lat0, all_ubias
-
-
-# for ncfile:
-#     for drifter:
-#         extract information
-#         compare
-#         save plots
-#     add to cumulative data
-# add to cumulative data
-# calculate stats
-# plot results
+         mod_uspeed, all_bias, o_lat, o_lon, lon0, lat0, all_ubias, depths, \
+         erru, errv, all_err_mag, all_err_dir
 
 
 def parseArgs():
@@ -200,7 +214,7 @@ def parseArgs():
     parser.add_argument("--debug", "-v", "--verbose", action="store_true", \
             help="increases output verbosity.")
     parser.add_argument("-V", '--version', action='version', version='v1.4')
-    require = add_argument_group('required')
+    require = parser.add_argument_group('required')
     require.add_argument("--loc", '-l', help="define the region to operate "\
             + "within.", nargs=1, choices=('GP', 'DG', 'PP'), required=True)
     parser.add_argument("--dir", '-D', nargs='*', help="defines an FVCOM " \
@@ -215,8 +229,8 @@ def parseArgs():
     # save or show data
     parser.add_argument("--noplot", "-x", action="store_true", help='generates ' \
             + 'no plots, just calculates statistics.')
-    require.add_argument("--savepath", '-p', nargs='?', help="defines an  " \
-            + "alternate savepath.", metavar='savedir', type=str, required=True)
+    parser.add_argument("--savepath", '-p', nargs='?', help="defines an  " \
+            + "alternate savepath.", metavar='savedir')
     parser._optionals.title = 'optional flag arguments'
     # option to write initial positions
     parser.add_argument("--write", '-w', help='records initial positions of ' \
@@ -234,8 +248,8 @@ def parseArgs():
     if not args.loc:
         sys.exit('a location tag is needed. type --help for more info.')
 
-    if args.plot:
-        print '\tplots to be created...'
+    if args.noplot:
+        print '\tplots suppressed...'
     if args.write:
         # add write for plots...
         print '\tinitial locations to be recorded...'
@@ -260,7 +274,10 @@ def setOptions(args):
         print '\tgathering all files...'
 
     if args.drifter:
-        matfiles = [obs_dir + file for file in args.drifter]
+        if args.drifter[0].endswith('.dat') or args.drifter[0].endswith('.txt'):
+            matfiles = np.loadtxt(args.drifter[0])
+        else:
+            matfiles = [obs_dir + file for file in args.drifter]
     else:
         matfiles = [obs_dir + file for file in os.listdir(obs_dir)]
 
@@ -279,7 +296,7 @@ def setOptions(args):
     if args.dir:
         dirs = args.dir
     else:
-        dirs = os.listdir(path + args.loc[0] + '/')
+        dirs = os.listdir(path2sim + args.loc[0] + '/')
 
     sim_path = [path2sim + args.loc[0] + '/' + file + '/output/subdomain_' \
                 + args.loc[0] + '1_0001.nc' for file in dirs]
@@ -298,25 +315,140 @@ def setOptions(args):
     # does the savepath exist?
     if args.noplot:
         plot=False
-     else:
+    else:
         plot=True
 
+    # define savepath
     savepath = args.savepath
-    if savepath[-1] != '/':
-        savepath = savepath + '/'
-    if debug:
-        print 'savepath selected: ', savepath
-        print 'looking for save directory...'
-    if not osp.exists(savepath):
+    if args.savepath:
+        if savepath[-1] != '/':
+            savepath = savepath + '/'
         if debug:
-            print 'directory not found.'
-            print 'creating directories...'
-            print 'directory {} successfully created.'.format(savepath)
-        os.makedirs(savepath)
-    elif not osp.isdir(savepath):
-        sys.exit('{} is not a directory.'.format(savepath))
+            print 'savepath selected: ', savepath
+            print 'looking for save directory...'
+        if not osp.exists(savepath):
+            if debug:
+                print 'directory not found.'
+                print 'creating directories...'
+                print 'directory {} successfully created.'.format(savepath)
+            os.makedirs(savepath)
+        elif not osp.isdir(savepath):
+            sys.exit('{} is not a directory.'.format(savepath))
 
     return args.loc[0], sim_path, obs_dir, matfiles, plot, savepath
+
+
+def createPlots(speedS, speedO, mean, stdev, bias, uspdS, uspdO, lon, lat, \
+        model, ubias, bfric, erru, errv, depth, drifts, debug=False):
+    """
+    Creates a bunch of plots.
+    """
+    # estimate cube ratio
+    ratio = sps.cbrt(np.mean(np.power(uspdO,3))/np.mean(np.power(uspdS,3)))
+    if debug:
+        print 'speed ratio is: {}'.format(ratio)
+
+    sns.set(font="serif")
+    # create plots
+    if debug:
+        print 'creating plots...'
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.scatter(speedS, ubias, alpha=0.25)
+    ax.set_xlabel('Model Speed (m/s)')
+    ax.set_ylabel('Bias')
+    ax.set_title('Bias vs. Model Speed for BFRIC={}'.format(bfric))
+
+    # determine line of best fit
+    if debug:
+        print '\tdetermining line of best fit...'
+
+    par = np.polyfit(speedS, ubias, 1)
+    m = par[-2]
+    b = par [-1]
+
+    variance = np.var(ubias)
+    residuals = np.var([(m*xx + b - yy)  for xx,yy \
+            in zip(speedS, ubias)])
+    Rsqr = np.round(1-residuals/variance, decimals=5)
+    if debug:
+        print '\tR^2 value for bias plot is {}...'.format(Rsqr)
+    plt.hold('on')
+    ax.plot(speedS, m*speedS+b, 'r-')
+    plt.grid(True)
+
+    # plot cube speeds
+    fi = plt.figure()
+    ax1 = fi.add_subplot(111)
+    speedS3 = np.power(speedS, 3)
+    speedO3 = np.power(speedO, 3)
+    ax1.scatter(speedS3, speedO3, alpha=0.25)
+    ax1.set_xlabel('Model Speed (m/s)')
+    ax1.set_ylabel('Drifter Speed (m/s)')
+    ax1.set_title('Model and Drifter Speed Comparison for BFRIC={}'.format(bfric))
+    coeff = np.polyfit(speedS3, speedO3, 1)
+    m = coeff[-2]
+    b = coeff[-1]
+    if debug:
+        print '\tcoeffs for cube plot are: \n\t\tm={}\n\t\tb={}'.format(m,b)
+    plt.hold('on')
+    ax1.plot(speedS3, m*speedS3+b)
+    variance = np.var(speedO3)
+    residuals = np.var([(m*xx + b - yy)  for xx,yy \
+            in zip(speedS3, speedO3)])
+    Rsqr = np.round(1-residuals/variance, decimals=5)
+    if debug:
+        print '\tR^2 for cube plot is {}'.format(Rsqr)
+
+    # plot bias v drifter
+    fig2 = plt.figure()
+    ax2 = fig2.add_subplot(111)
+    if debug:
+        print '\tnum drift is ', np.arange(1,num_drift+1).size
+        print '\tlen of mean is ', len(mean)
+
+    # hacky fix for differing lengths
+    try:
+        ax2.plot(np.arange(1,num_drift+1), mean, 'go')
+    except:
+        ax2.plot(np.arange(1,num_drift), mean, 'go')
+    ax2.set_ylabel('Bias')
+    ax2.set_xlabel('Drifter')
+    ax2.set_title('Individual Bias vs Drifter for BFRIC={}'.format(bfric))
+    plt.hold('on')
+    ax2.axhline(y=np.mean(bias), linewidth=2)
+    plt.grid(True)
+
+    # spatial plot of ratios...
+    if debug:
+        print '\tstarting spatial plot...'
+    glon = model.Grid.lon
+    glat = model.Grid.lat
+    if debug:
+        print '\tcomputing bounding boxes...'
+    bounds = [np.min(glon), np.max(glon), np.min(glat), np.max(glat)]
+
+
+    uspeedO3 = np.power(uspdO, 3)
+    uspeedS3 = np.power(uspdS, 3)
+    if debug:
+        print '\tcomputing colors...'
+    var3 = np.divide(uspeedO3, uspeedS3)
+    # color = np.subtract(var3, np.min(var3)) / (np.max(var3) - np.max(var3))
+
+    if debug:
+        print '\tcreating map...'
+        print '\tcreating scatter plot...'
+	f=plt.figure()
+	ax = f.add_axes([.125,.1,.775,.8])
+	ax.triplot(glon, glat, model.Grid.trinodes, zorder=10, lw=10)
+	clim=np.percentile(var3,[5,95])
+	cb = ax.scatter(lon, lat, c=var3, s=10, edgecolor='None', \
+            vmin=clim[0], vmax=clim[1], zorder=20)
+    plt.colorbar(cb)
+    if debug:
+        print '\tcreating color bar...'
 
 
 if __name__ == '__main__':
@@ -347,6 +479,11 @@ if __name__ == '__main__':
     all_lon0 = []
     all_lat0 = []
     all_ubias = []
+    all_depth = []
+    all_erru = []
+    all_errv = []
+    all_err_mag = []
+    all_err_dir = []
     num_drift = 0
 
     for dir_name in sim_path:
@@ -377,14 +514,14 @@ if __name__ == '__main__':
         if not files:
             sys.exit('drifters given are not within model runtime window.')
 
-        # CONTINUE HERE #######################################################
         drift, mean, std, speedO, speedS, uspdO, uspdS, bias, lat, lon, \
-                lon0, lat0, ubias = calculateBias(ncfile, files, loc, debug=debug)
+            lon0, lat0, ubias, depth, erru, errv, err_mag, err_dir \
+            = calculateBias(ncfile, files, loc, debug=debug)
 
         if debug:
             print 'adding to cumulative data...'
 
-        drifters['dir_name'] = drift
+        drifters[dir_name] = drift
         all_mean.extend(mean)
         all_std.extend(std)
         all_speedS.extend(speedS)
@@ -397,6 +534,11 @@ if __name__ == '__main__':
         all_lon.extend(lon)
         all_lon0.extend(lon0)
         all_lat0.extend(lat0)
+        all_depth.extend(depth)
+        all_erru.extend(erru)
+        all_errv.extend(errv)
+        all_err_mag.extend(err_mag)
+        all_err_dir.extend(err_dir)
         num_drift = num_drift + len(drift)
 
         if debug:
@@ -404,7 +546,6 @@ if __name__ == '__main__':
 
     if debug:
         print 'creating as numpy arrays...'
-
     speedS = np.asarray(all_speedS)
     speedO = np.asarray(all_speedO)
     mean = np.asarray(all_mean)
@@ -415,11 +556,16 @@ if __name__ == '__main__':
     uspdO = np.asarray(all_uspeedO)
     lat = np.asarray(all_lat)
     lon = np.asarray(all_lon)
+    depth = np.array(all_depth)
+    erru = np.asarray(all_erru)
+    errv = np.asarray(all_errv)
+    err_mag = np.asarray(all_err_mag)
+    err_dir = np.asarray(all_err_dir)
 
     # create plots and do stats
-    createPlots(speedS, speedO, mean, stdev, bias, uspdS, uspdO, lat, lon, \
-            ncfile, ubias, args.bfric, debug=debug)
-    plt.show()
+    # createPlots(speedS, speedO, mean, stdev, bias, uspdS, uspdO, lat, lon, \
+    #        ncfile, ubias, args.bfric, erru, errv, depth, drifters, debug=debug)
+    # plt.show()
 
     # write init loc data to text file
     if args.write:
