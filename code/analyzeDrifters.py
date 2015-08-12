@@ -90,7 +90,10 @@ def calculateBias(ncfile, files, loc, debug=False):
 
     if debug:
         print '{} drifters will be analysed...'.format(len(files))
+    #    print 'calculating depth...'
+    # ncfile.Util3D.depth()
 
+    data_count = 0
     drifters = {}
     all_bias = []
     all_ubias = []
@@ -110,11 +113,17 @@ def calculateBias(ncfile, files, loc, debug=False):
     all_err_mag = []
     all_err_dir = []
 
+    mlon = ncfile.Grid.lon
+    mlat = ncfile.Grid.lat
+    mlonc = ncfile.Grid.lonc
+    mlatc = ncfile.Grid.latc
+
     for i, fname in enumerate(files, start=1):
-        drifters[i] = fname
+        drifters[fname[48:]] = {}
         if debug:
             print 'creating drifter object {}...'.format(i)
             print fname
+
         drift = Drifter(fname, debug=False)
         # create validation structure
         if debug:
@@ -136,31 +145,20 @@ def calculateBias(ncfile, files, loc, debug=False):
         mV = valid.Variables.struct['mod_timeseries']['v']
         olon = valid.Variables.struct['lon']
         olat = valid.Variables.struct['lat']
-        mlon = ncfile.Grid.lon
-        mlat = ncfile.Grid.lat
-        mlonc = ncfile.Grid.lonc
-        mlatc = ncfile.Grid.latc
-        # how to get mlon, mlat?
+
         uspeedS = np.sqrt(mU**2 + mV**2)
         uspeedO = np.sqrt(oU**2 + oV**2)
 
         # index finder is only in dvt branch
-        # indices = [ncfile.Util2D.index_finder(j,k) for j, k in zip(olon, olat)]
-        # c_pts = closest_point(olon, olat, mlon, mlat, mlonc, mlatc, tri??)
-        c_pts = closest_points(olon, olat, mlon, mlat)
-        #indices = np.where(
-        depth = ncfile.Grid.h[indices]
+        depth = [ncfile.Util3D.depth_at_point(j,k) for j,k in zip(olon,olat)]
+        datetimes = np.asarray([dn2dt(time) for time in mTimes])
 
         if debug:
             print '\tcalculating signed speeds...'
-
-        # datetimes = np.asarray([dn2dt(time) for time in mTimes])
-
         if not uspeedS.shape == uspeedO.shape:
             if debug:
                 print 'drifter {} does not have similar-shaped speeds...'
             continue
-
         if debug:
             print '\tcalculating statistics...'
 
@@ -174,6 +172,35 @@ def calculateBias(ncfile, files, loc, debug=False):
         errv = np.subtract(mV, oV)
         err_mag = np.sqrt(erru**2 + errv**2)
         err_dir = np.arctan(np.divide(errv, erru))/np.pi * 180
+
+        # info on # of data this drifter has and other individual data
+        drifters[fname[48:]]['num'] = i
+        drifters[fname[48:]]['(start, stop)'] = (data_count,data_count+len(olon)-1)
+        data_count += len(olon)
+        drifters[fname[48:]]['tide'] = str(drift.Data['water_level'].tide)
+        drifters[fname[48:]]['beta'] = drift.Data['water_level'].beta
+        ind = [np.argmin(np.abs(drift.Data['velocity'].vel_time - x)) \
+                for x in valid.Variables.struct['mod_time']]
+        drifters[fname[48:]]['alpha'] = drift.Data['velocity'].alpha[ind]
+        drifters[fname[48:]]['obs_speed'] = speedO
+        drifters[fname[48:]]['sim_speed'] = speedS
+        drifters[fname[48:]]['bias'] = diffs
+        drifters[fname[48:]]['mean_bias'] = mean_bias
+        drifters[fname[48:]]['sdev_bias'] = sdev_bias
+        drifters[fname[48:]]['err_u'] = erru
+        drifters[fname[48:]]['err_v'] = errv
+        drifters[fname[48:]]['err_mag'] = err_mag
+        drifters[fname[48:]]['err_dir'] = err_dir
+        drifters[fname[48:]]['depth'] = depth
+        drifters[fname[48:]]['u_sim_speed'] = uspeedS
+        drifters[fname[48:]]['u_obs_speed'] = uspeedO
+        drifters[fname[48:]]['u_bias'] = udiffs
+        drifters[fname[48:]]['lon'] = olon
+        drifters[fname[48:]]['lat'] = olat
+        drifters[fname[48:]]['obs_timeseries'] = {'u' : oU, 'v' : oV}
+        drifters[fname[48:]]['mod_timeseries'] = {'u' : mU, 'v' : mV}
+        drifters[fname[48:]]['datetimes'] = datetimes
+        drifters[fname[48:]]['mat_times'] = mTimes
 
         all_sdev.append(sdev_bias)
         all_mean.append(mean_bias)
@@ -226,11 +253,6 @@ def parseArgs():
     parser.add_argument("--bfric", '-B', help="select a bottom " \
             + "roughness.", nargs=1, choices=('0.009', '0.012', '0.015'), \
             default='0.015', required=True, type=str)
-    # save or show data
-    parser.add_argument("--noplot", "-x", action="store_true", help='generates ' \
-            + 'no plots, just calculates statistics.')
-    parser.add_argument("--savepath", '-p', nargs='?', help="defines an  " \
-            + "alternate savepath.", metavar='savedir')
     parser._optionals.title = 'optional flag arguments'
     # option to write initial positions
     parser.add_argument("--write", '-w', help='records initial positions of ' \
@@ -248,8 +270,6 @@ def parseArgs():
     if not args.loc:
         sys.exit('a location tag is needed. type --help for more info.')
 
-    if args.noplot:
-        print '\tplots suppressed...'
     if args.write:
         # add write for plots...
         print '\tinitial locations to be recorded...'
@@ -311,48 +331,27 @@ def setOptions(args):
     elif args.debug:
         print '\tnc files found.'
 
-    # look for save directory
-    # does the savepath exist?
-    if args.noplot:
-        plot=False
-    else:
-        plot=True
-
-    # define savepath
-    savepath = args.savepath
-    if args.savepath:
-        if savepath[-1] != '/':
-            savepath = savepath + '/'
-        if debug:
-            print 'savepath selected: ', savepath
-            print 'looking for save directory...'
-        if not osp.exists(savepath):
-            if debug:
-                print 'directory not found.'
-                print 'creating directories...'
-                print 'directory {} successfully created.'.format(savepath)
-            os.makedirs(savepath)
-        elif not osp.isdir(savepath):
-            sys.exit('{} is not a directory.'.format(savepath))
-
-    return args.loc[0], sim_path, obs_dir, matfiles, plot, savepath
+    return args.loc[0], sim_path, obs_dir, matfiles
 
 
-def createPlots(speedS, speedO, mean, stdev, bias, uspdS, uspdO, lon, lat, \
-        model, ubias, bfric, erru, errv, depth, drifts, debug=False):
+def cubeRatio(uspdO, uspdS, debug=False, plot=False):
     """
-    Creates a bunch of plots.
+    Estimates the cubed-ratio and returns it.
     """
-    # estimate cube ratio
     ratio = sps.cbrt(np.mean(np.power(uspdO,3))/np.mean(np.power(uspdS,3)))
-    if debug:
-        print 'speed ratio is: {}'.format(ratio)
 
-    sns.set(font="serif")
-    # create plots
     if debug:
-        print 'creating plots...'
+        print 'speed ratio is {}'.format(ratio)
 
+    return ratio
+
+
+def plotBias(speedS, ubias, bfric, debug=False):
+    """
+    Plots the bias information. Returns the R-squared.
+    """
+    if debug:
+        print 'creating plot...'
     fig = plt.figure()
     ax = fig.add_subplot(111)
     ax.scatter(speedS, ubias, alpha=0.25)
@@ -377,8 +376,15 @@ def createPlots(speedS, speedO, mean, stdev, bias, uspdS, uspdO, lon, lat, \
     plt.hold('on')
     ax.plot(speedS, m*speedS+b, 'r-')
     plt.grid(True)
+    plt.show()
 
-    # plot cube speeds
+    return Rsqr
+
+
+def plotCubeSpeeds(speedS, speedO, bfric, debug=False):
+    """
+    Creates a plot of the speeds cubed, and returns the R-squared.
+    """
     fi = plt.figure()
     ax1 = fi.add_subplot(111)
     speedS3 = np.power(speedS, 3)
@@ -400,8 +406,15 @@ def createPlots(speedS, speedO, mean, stdev, bias, uspdS, uspdO, lon, lat, \
     Rsqr = np.round(1-residuals/variance, decimals=5)
     if debug:
         print '\tR^2 for cube plot is {}'.format(Rsqr)
+    plt.show()
 
-    # plot bias v drifter
+    return Rsqr
+
+
+def plotBiasvDrifter(bias, num_drift, mean, bfric, debug=False):
+    """
+    Creates a plot of the bias vs. the drifters.
+    """
     fig2 = plt.figure()
     ax2 = fig2.add_subplot(111)
     if debug:
@@ -420,7 +433,49 @@ def createPlots(speedS, speedO, mean, stdev, bias, uspdS, uspdO, lon, lat, \
     ax2.axhline(y=np.mean(bias), linewidth=2)
     plt.grid(True)
 
-    # spatial plot of ratios...
+    plt.show()
+
+
+def plotBiasvDepth(drift, bias, depth):
+    """
+    Plots error vs. depth for a single drifter.
+    """
+    fig = plt.figure()
+    ax2 = fig2.add_subplot(111)
+    if debug:
+        print 'creating plot...'
+
+    idx1, idx2 = drift[1]
+
+
+def compareBFRIC():
+    """
+    For a single drift, a comparative plot is generated with all the model runs
+    that have a different bottom friction.
+    """
+    pass
+
+
+def plotTrajectory():
+    """
+    For a single drift, a comparative speed-time plot is created, with a spatial
+    trajectory plot next to it.
+    """
+    pass
+
+
+def evalWindSpeed(drift, err_mag, err_dir, debug=False):
+    """
+    Compares the direction and magnitude of the wind speed for a particular
+    drift with the calculated average error magnitude and direction.
+    """
+    pass
+
+
+def spatialRatios(model, lon, lat, uspdO, uspdS, debug=False):
+    """
+    Creates a spatially-varying plot of the power ratios.
+    """
     if debug:
         print '\tstarting spatial plot...'
     glon = model.Grid.lon
@@ -428,7 +483,6 @@ def createPlots(speedS, speedO, mean, stdev, bias, uspdS, uspdO, lon, lat, \
     if debug:
         print '\tcomputing bounding boxes...'
     bounds = [np.min(glon), np.max(glon), np.min(glat), np.max(glat)]
-
 
     uspeedO3 = np.power(uspdO, 3)
     uspeedS3 = np.power(uspdS, 3)
@@ -453,12 +507,14 @@ def createPlots(speedS, speedO, mean, stdev, bias, uspdS, uspdO, lon, lat, \
 
 if __name__ == '__main__':
 
+    # use seaborn without Arial font installed
+    sns.set(font="serif")
     # parse the command line args and identify parameters
     print '\nparsing command line options...'
     args = parseArgs()
     debug = args.debug
 
-    loc, sim_path, obs_dir, obs_files, plot, savepath = setOptions(args)
+    loc, sim_path, obs_dir, obs_files = setOptions(args)
 
     if debug:
         print '\n--parameters selected--'
@@ -487,7 +543,8 @@ if __name__ == '__main__':
     num_drift = 0
 
     for dir_name in sim_path:
-        print '\nloading fvcom object...'
+        if debug:
+            print '\nloading fvcom object...'
         ncfile = FVCOM(dir_name, debug=False)
         if debug:
             print 'ncfile for {} loaded.'.format(dir_name)
@@ -521,7 +578,8 @@ if __name__ == '__main__':
         if debug:
             print 'adding to cumulative data...'
 
-        drifters[dir_name] = drift
+        # extracts the name of the directory without including the whole path
+        drifters[dir_name[82:96]] = drift
         all_mean.extend(mean)
         all_std.extend(std)
         all_speedS.extend(speedS)
@@ -562,10 +620,11 @@ if __name__ == '__main__':
     err_mag = np.asarray(all_err_mag)
     err_dir = np.asarray(all_err_dir)
 
-    # create plots and do stats
-    # createPlots(speedS, speedO, mean, stdev, bias, uspdS, uspdO, lat, lon, \
-    #        ncfile, ubias, args.bfric, erru, errv, depth, drifters, debug=debug)
-    # plt.show()
+    print '\n----returned cumulative data----'
+    print 'speedS, \nspeedO, \nmean, \nstdev, \nbias, \nubias, \nuspdO, ' \
+           + '\nuspdS, \nlat, \nlon, \ndepth, \nerru, \nerrv, \nerr_mag, ' \
+           + '\nerr_dir'
+    print 'all individul data is encased within the dictionary drifters'
 
     # write init loc data to text file
     if args.write:
