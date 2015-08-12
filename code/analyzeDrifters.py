@@ -174,6 +174,7 @@ def calculateBias(ncfile, files, loc, debug=False):
         err_dir = np.arctan(np.divide(errv, erru))/np.pi * 180
 
         # info on # of data this drifter has and other individual data
+        drifters[fname[48:]]['filename'] = fname[48:]
         drifters[fname[48:]]['num'] = i
         drifters[fname[48:]]['(start, stop)'] = (data_count,data_count+len(olon)-1)
         data_count += len(olon)
@@ -191,6 +192,8 @@ def calculateBias(ncfile, files, loc, debug=False):
         drifters[fname[48:]]['err_v'] = errv
         drifters[fname[48:]]['err_mag'] = err_mag
         drifters[fname[48:]]['err_dir'] = err_dir
+        idx = [np.argmin(np.abs(ncfile.Variables.matlabTime-x)) for x in mTimes]
+        depth = [depth[k][i][-1] for k, i in enumerate(idx)]
         drifters[fname[48:]]['depth'] = depth
         drifters[fname[48:]]['u_sim_speed'] = uspeedS
         drifters[fname[48:]]['u_obs_speed'] = uspeedO
@@ -436,19 +439,27 @@ def plotBiasvDrifter(bias, num_drift, mean, bfric, debug=False):
     plt.show()
 
 
-def plotBiasvDepth(drift, bias, depth):
+def plotBiasvDepth(drift, debug=False):
     """
     Plots error vs. depth for a single drifter.
     """
     fig = plt.figure()
-    ax2 = fig2.add_subplot(111)
+    ax = fig.add_subplot(111)
     if debug:
         print 'creating plot...'
 
-    idx1, idx2 = drift[1]
+    bias = drift['bias']
+    depth = drift['depth']
+
+    ax.plot(depth, bias, 'bo')
+    ax.set_ylabel('Bias')
+    ax.set_xlabel('Depth along Trajectory (m)')
+    ax.set_title('Bias vs. Depth for {}'.format(drift['filename']))
+    plt.grid(True)
+    plt.show()
 
 
-def compareBFRIC():
+def compareBFRIC(drift, debug=False):
     """
     For a single drift, a comparative plot is generated with all the model runs
     that have a different bottom friction.
