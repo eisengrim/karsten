@@ -26,6 +26,9 @@ import seaborn as sns
 from pyseidon import *
 from interpolation_utils import *
 import sklearn.preprocessing as skp
+import numpy.linalg as LA
+from scipy.stats.stats import pearsonr
+
 
 PATH2SIM="/EcoII/acadia_uni/workspace/simulated/FVCOM/dngridCSR/drifter_runs/"
 PATH2OBS="/EcoII/acadia_uni/workspace/observed/"
@@ -112,6 +115,7 @@ def calculateBias(ncfile, files, loc, debug=False):
     all_errv = []
     all_err_mag = []
     all_err_dir = []
+    mean_depth = []
 
     mlon = ncfile.Grid.lon
     mlat = ncfile.Grid.lat
@@ -175,35 +179,51 @@ def calculateBias(ncfile, files, loc, debug=False):
 
         # info on # of data this drifter has and other individual data
         drifters[fname[48:]]['filename'] = fname[48:]
-        drifters[fname[48:]]['num'] = i
-        drifters[fname[48:]]['(start, stop)'] = (data_count,data_count+len(olon)-1)
+        fname = fname[48:]
+        drifters[fname]['num'] = i
+        drifters[fname]['(start, stop)'] = (data_count,data_count+len(olon)-1)
         data_count += len(olon)
-        drifters[fname[48:]]['tide'] = str(drift.Data['water_level'].tide)
-        drifters[fname[48:]]['beta'] = drift.Data['water_level'].beta
+        drifters[fname]['tide'] = str(drift.Data['water_level'].tide)
+        drifters[fname]['beta'] = drift.Data['water_level'].beta
         ind = [np.argmin(np.abs(drift.Data['velocity'].vel_time - x)) \
                 for x in valid.Variables.struct['mod_time']]
-        drifters[fname[48:]]['alpha'] = drift.Data['velocity'].alpha[ind]
-        drifters[fname[48:]]['obs_speed'] = speedO
-        drifters[fname[48:]]['sim_speed'] = speedS
-        drifters[fname[48:]]['bias'] = diffs
-        drifters[fname[48:]]['mean_bias'] = mean_bias
-        drifters[fname[48:]]['sdev_bias'] = sdev_bias
-        drifters[fname[48:]]['err_u'] = erru
-        drifters[fname[48:]]['err_v'] = errv
-        drifters[fname[48:]]['err_mag'] = err_mag
-        drifters[fname[48:]]['err_dir'] = err_dir
+        drifters[fname]['alpha'] = drift.Data['velocity'].alpha[ind]
+        drifters[fname]['obs_speed'] = speedO
+        drifters[fname]['sim_speed'] = speedS
+        drifters[fname]['bias'] = diffs
+        drifters[fname]['mean_bias'] = mean_bias
+        drifters[fname]['sdev_bias'] = sdev_bias
+        drifters[fname]['err_u'] = erru
+        drifters[fname]['err_v'] = errv
+        drifters[fname]['err_mag'] = err_mag
+        drifters[fname]['err_dir'] = err_dir
         idx = [np.argmin(np.abs(ncfile.Variables.matlabTime-x)) for x in mTimes]
         depth = [depth[k][i][-1] for k, i in enumerate(idx)]
-        drifters[fname[48:]]['depth'] = depth
-        drifters[fname[48:]]['u_sim_speed'] = uspeedS
-        drifters[fname[48:]]['u_obs_speed'] = uspeedO
-        drifters[fname[48:]]['u_bias'] = udiffs
-        drifters[fname[48:]]['lon'] = olon
-        drifters[fname[48:]]['lat'] = olat
-        drifters[fname[48:]]['obs_timeseries'] = {'u' : oU, 'v' : oV}
-        drifters[fname[48:]]['mod_timeseries'] = {'u' : mU, 'v' : mV}
-        drifters[fname[48:]]['datetimes'] = datetimes
-        drifters[fname[48:]]['mat_times'] = mTimes
+        drifters[fname]['depth'] = depth
+        drifters[fname]['u_sim_speed'] = uspeedS
+        drifters[fname]['u_obs_speed'] = uspeedO
+        drifters[fname]['u_bias'] = udiffs
+        drifters[fname]['lon'] = olon
+        drifters[fname]['lat'] = olat
+        drifters[fname]['obs_timeseries'] = {'u' : oU, 'v' : oV}
+        drifters[fname]['mod_timeseries'] = {'u' : mU, 'v' : mV}
+        drifters[fname]['datetimes'] = datetimes
+        drifters[fname]['mat_times'] = mTimes
+
+        # find wind speed
+        if fname.split('.')[0].split('_')[-1].startswith('S'):
+            wind = fname.split('.')[0].split('_')[-1]
+        elif fname.split('.')[0].split('_')[-1].startswith('N'):
+            wind = fname.split('.')[0].split('_')[-1]
+        elif fname.split('.')[0].split('_')[-1].startswith('W'):
+            wind = fname.split('.')[0].split('_')[-1]
+        elif fname.split('.')[0].split('_')[-1].startswith('E'):
+            wind = fname.split('.')[0].split('_')[-1]
+        else:
+            if debug:
+                print 'no wind speed...'
+            wind = '0'
+        drifters[fname]['wind_speed'] = wind
 
         all_sdev.append(sdev_bias)
         all_mean.append(mean_bias)
@@ -214,6 +234,7 @@ def calculateBias(ncfile, files, loc, debug=False):
         all_err_mag.extend(err_mag)
         all_err_dir.extend(err_dir)
         depths.extend(depth)
+        mean_depth.append(np.mean(depth))
 
         if debug:
             print '\tcompiling data...'
@@ -228,7 +249,7 @@ def calculateBias(ncfile, files, loc, debug=False):
 
     return drifters, all_mean, all_sdev, obs_speed, mod_speed, obs_uspeed, \
          mod_uspeed, all_bias, o_lat, o_lon, lon0, lat0, all_ubias, depths, \
-         erru, errv, all_err_mag, all_err_dir
+         erru, errv, all_err_mag, all_err_dir, mean_depth
 
 
 def parseArgs():
@@ -379,7 +400,7 @@ def plotBias(speedS, ubias, bfric, debug=False):
     plt.hold('on')
     ax.plot(speedS, m*speedS+b, 'r-')
     plt.grid(True)
-    plt.show()
+    print 'type \'plt.show()\' to display...'
 
     return Rsqr
 
@@ -409,7 +430,7 @@ def plotCubeSpeeds(speedS, speedO, bfric, debug=False):
     Rsqr = np.round(1-residuals/variance, decimals=5)
     if debug:
         print '\tR^2 for cube plot is {}'.format(Rsqr)
-    plt.show()
+    print 'type \'plt.show()\' to display...'
 
     return Rsqr
 
@@ -436,7 +457,7 @@ def plotBiasvDrifter(bias, num_drift, mean, bfric, debug=False):
     ax2.axhline(y=np.mean(bias), linewidth=2)
     plt.grid(True)
 
-    plt.show()
+    print 'type \'plt.show()\' to display...'
 
 
 def plotBiasvDepth(drift, debug=False):
@@ -456,7 +477,7 @@ def plotBiasvDepth(drift, debug=False):
     ax.set_xlabel('Depth along Trajectory (m)')
     ax.set_title('Bias vs. Depth for {}'.format(drift['filename']))
     plt.grid(True)
-    plt.show()
+    print 'type \'plt.show()\' to display...'
 
 
 def compareBFRIC(drift, debug=False):
@@ -475,12 +496,74 @@ def plotTrajectory():
     pass
 
 
-def evalWindSpeed(drift, err_mag, err_dir, debug=False):
+def evalWindSpeed(drift, debug=False):
     """
     Compares the direction and magnitude of the wind speed for a particular
-    drift with the calculated average error magnitude and direction.
+    drift with the calculated average error magnitude and direction, using the
+    cosine similarity (-1 is exact opposite, 1 is exact same, 0 is orthogonal).
     """
-    pass
+    wind = drift['wind_speed']
+    if wind != '0':
+        mag = float(''.join([k for k in wind if k.isdigit()]))
+        dir_brng = ''.join([k for k in wind if k.isalpha()])
+
+        headings = {'N' : 360.0,
+                    'NNE' : 22.5,
+                    'NE' : 45.0,
+                    'ENE' : 67.5,
+                    'E' : 90.0,
+                    'ESE' : 112.5,
+                    'SE' : 135.0,
+                    'SSE' : 160.0,
+                    'S' : 180.0,
+                    'SSW' : 202.5,
+                    'SW' : 225.0,
+                    'WSW' : 247.5,
+                    'W' : 270.0,
+                    'WNW' : 292.5,
+                    'NW' : 315.0,
+                    'NNW' : 337.5}
+
+        dir = np.deg2rad(headings[dir_brng])
+        if debug:
+            print 'bearing is {}'.format(dir_brng)
+            print 'tide is {}'.format(drift['tide'])
+
+        e_dir = np.deg2rad(np.mean(drift['err_dir']))
+        e_mag = np.mean(drift['err_mag'])
+
+        wind_vec = np.array([mag*np.cos(dir), mag*np.sin(dir)])
+        err_vec = np.array([e_mag*np.cos(e_dir), e_mag*np.sin(e_dir)])
+
+        similarity = np.dot(wind_vec, err_vec) / (e_mag * mag)
+        if debug:
+            print 'cosine similarity is {}'.format(similarity)
+        return similarity
+
+
+def varCorr(var1, var2, xlabel='', ylabel='', title='', debug=False, plot=False):
+    """
+    Calculates the correlation between two given variables, so long as they
+    are the same size (Uses the Pearson product-moment correlation coefficient).
+    If plot==True, a scatter plot of the two variables will be generated.
+
+    Returns the Pearson coefficient and the two-tailed p-value.
+    """
+    fig = plt.Figure()
+    ax = fig.add_subplot(111)
+
+    ax.scatter(var1, var2)
+    if title:
+        plt.title(title)
+    if ylabel:
+        plt.ylabel(ylabel)
+    if xlabel:
+        plt.xlabel(xlabel)
+    plt.grid(True)
+
+    print 'type \'plt.show()\' to display...'
+
+    return pearsonr(var1, var2)
 
 
 def spatialRatios(model, lon, lat, uspdO, uspdS, debug=False):
@@ -547,6 +630,7 @@ if __name__ == '__main__':
     all_lat0 = []
     all_ubias = []
     all_depth = []
+    all_avg_depth = []
     all_erru = []
     all_errv = []
     all_err_mag = []
@@ -583,7 +667,7 @@ if __name__ == '__main__':
             sys.exit('drifters given are not within model runtime window.')
 
         drift, mean, std, speedO, speedS, uspdO, uspdS, bias, lat, lon, \
-            lon0, lat0, ubias, depth, erru, errv, err_mag, err_dir \
+            lon0, lat0, ubias, depth, erru, errv, err_mag, err_dir, avg_d \
             = calculateBias(ncfile, files, loc, debug=debug)
 
         if debug:
@@ -608,6 +692,7 @@ if __name__ == '__main__':
         all_errv.extend(errv)
         all_err_mag.extend(err_mag)
         all_err_dir.extend(err_dir)
+        all_avg_depth.extend(avg_d)
         num_drift = num_drift + len(drift)
 
         if debug:
@@ -630,12 +715,13 @@ if __name__ == '__main__':
     errv = np.asarray(all_errv)
     err_mag = np.asarray(all_err_mag)
     err_dir = np.asarray(all_err_dir)
+    avg_depth = np.asarray(all_avg_depth)
 
     print '\n----returned cumulative data----'
     print 'speedS, \nspeedO, \nmean, \nstdev, \nbias, \nubias, \nuspdO, ' \
            + '\nuspdS, \nlat, \nlon, \ndepth, \nerru, \nerrv, \nerr_mag, ' \
            + '\nerr_dir'
-    print 'all individul data is encased within the dictionary drifters'
+    print 'all individul data is encased within the dictionary \'drifters\''
 
     # write init loc data to text file
     if args.write:
