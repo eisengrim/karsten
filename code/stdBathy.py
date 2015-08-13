@@ -1,7 +1,7 @@
-# Std_bathy
+# stdBathy
 # Written by: Joel Culina
 
-# This code calculates bathy standard deviation field sigma(x,y)
+# This code calculates bathymetric standard deviation field sigma(x,y)
 # Varying bottom roughness is then found as:
 # z0(x,y) = alpha*sigma(x,y), where alpha is tuning (scalar) coefficient
 # Based on Anderson and Meneveau (2011), doi:10.1017/jfm.2011.137
@@ -45,37 +45,50 @@ import pyproj
 import matplotlib.pyplot as plt
 import cPickle as pickle
 
-# User input
+####################
+#### User Input ####
+####################
 
-# Multibeam depth file
-path_MB = ''
-file_MB = 'PP_2m_MSL_Data.csv'
+#### Multibeam Depth File ####
+path_MB = '/home/kiy/bathym/'
+file_MB = 'DG_2m_MSL_Data.csv'
 
-# Model files
-path_model = ''
-file_model_nc = 'acadia_BoF_0001.nc'
+#### Model Files ####
+path_model = '/home/jonsmith/var_br_runs/'
+file_model_nc = 'dngridCSR_sample.nc'
 
-# Output file
-output_file = 'PP_std_bathy_triArea.p'
+#### Output File ####
+output_file = 'DG_stdbathy_triArea_dngridCSR.p'
 
-'''
+#### Bounding Box ####
 # Use DG bounding box to define region
 westb = [-65.84, 44.64]
 northb = [-65.73, 44.72]
 
-'''
-
 # Use PP bounding box to define region
-westb = [-66.23, 44.37]
-northb = [-66.19, 44.41]
+# westb = [-66.23, 44.37]
+# northb = [-66.19, 44.41]
 
-# Projections (use acadia_BoF projection)
+# Use GP bounding box to define region
+# westb = [-66.38, 44.32]
+# northb = [-66.29, 44.21]
+
+#### Projections ####
+# dngridCSR projection
 proj_lcc = pyproj.Proj(proj=
-    'lcc +lon_0=-64.55880 +lat_0=41.84493 +lat_1=39.72147 +lat_2=43.96838')
+	'lcc +lon_0=-64.55880 +lat_0=41.78504 +lat_1=39.69152 +lat_2=43.87856')
 proj_utm20 = pyproj.Proj(proj=
-    'utm +zone=20T, +north +ellps=WGS84 +datum=WGS84 +units=m +no_defs')
+	'utm +zone=20T, +north +ellps=WGS84 +datum=WGS84 +unites=m +no_defs')
 
-# Load data
+# acadia_BoF projection
+# proj_lcc = pyproj.Proj(proj=
+#     'lcc +lon_0=-64.55880 +lat_0=41.84493 +lat_1=39.72147 +lat_2=43.96838')
+# proj_utm20 = pyproj.Proj(proj=
+#     'utm +zone=20T, +north +ellps=WGS84 +datum=WGS84 +units=m +no_defs')
+
+###################
+#### Load Data ####
+###################
 
 # Initialize
 xobs = []
@@ -171,6 +184,6 @@ for i, roi in enumerate(ROImod):
     hobs_filt_2 = (np.sum(hobs[near_node]*gauss)) ** 2.
     std_bathy[roi] = (h2obs_filt - hobs_filt_2) ** (1/2.)
 
-# Save
+#### Save ####
 
 pickle.dump(std_bathy, open(output_file, 'wb'))
