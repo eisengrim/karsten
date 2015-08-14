@@ -50,11 +50,11 @@ import cPickle as pickle
 ####################
 
 #### Multibeam Depth File ####
-path_MB = '/home/kiy/bathym/'
+path_MB = '/array/home/119865c/karsten/bathym/'
 file_MB = 'DG_2m_MSL_Data.csv'
 
 #### Model Files ####
-path_model = '/home/jonsmith/var_br_runs/'
+path_model = '/EcoII/acadia_uni/workspace/simulated/FVCOM/dngridCSR/sample_grid/'
 file_model_nc = 'dngridCSR_sample.nc'
 
 #### Output File ####
@@ -91,6 +91,8 @@ proj_utm20 = pyproj.Proj(proj=
 ###################
 
 # Initialize
+print 'initializing...'
+
 xobs = []
 yobs = []
 latobs = []
@@ -101,6 +103,7 @@ ymod = []
 hmod = []
 
 # MB dep
+print 'opening file...\ngathering data...'
 f = open(path_MB + file_MB, 'r')
 for i, line in enumerate(f):
     if i == 0:
@@ -117,9 +120,11 @@ hobs = np.asarray(hobs)
 h2obs = hobs ** 2.
 
 # Convert lon/lat into x/y values
+print 'converting lon/lat to x/y...'
 xobs, yobs = proj_utm20(lonobs, latobs)
 
 # Model grid and depth
+print 'extracting netcdf data...'
 nc = net.Dataset(path_model + file_model_nc)
 trinodes = nc.variables['nv'][:, :].T
 art1 = nc.variables['art1'][:]
@@ -131,24 +136,25 @@ y_vert = nc.variables['y'][:]
 nc.close()
 
 # Find values at element centroids:
-
+print 'finding values at element centroids...'
 hmod = (hmod[trinodes[:, 0] - 1] + hmod[trinodes[:, 1] - 1]
         + hmod[trinodes[:, 2] - 1]) / 3.
 art1 = (art1[trinodes[:, 0] - 1] + art1[trinodes[:, 1] - 1]
         + art1[trinodes[:, 2] - 1]) / 3.
 
 # Change model proj to utm20 to match obs and calculate triangle area
-
+print 'calculating triangle area...'
 xmod, ymod = proj_utm20(lonc, latc)
 tri_area = triangleArea(x_vert, y_vert, trinodes)
 
 # Find find subset of elements (ROImod) over which find std
 # Use rectangle bounding box instead of ellipse
+print 'finding elements in bounding box...'
 ROImod = np.where((lonc >= westb[0]) & (lonc <= northb[0]) &
                   (latc >= westb[1]) & (latc <= northb[1]))[0].tolist()
 
 # Find local bathy standard deviation from obs at each model element:
-
+print 'calculating sig...'
 # Std of Gaussian filter/kernel, use triangle area
 # sig = art1 ** (1/2.)
 sig = np.sqrt(tri_area / np.pi)
@@ -158,6 +164,7 @@ hobs_filt = np.zeros(hmod.shape[0])
 std_bathy = np.zeros(hmod.shape[0])
 
 # Filter at each point
+print 'filtering at each point...'
 for i, roi in enumerate(ROImod):
     print i, np.size(ROImod)
 
@@ -185,5 +192,5 @@ for i, roi in enumerate(ROImod):
     std_bathy[roi] = (h2obs_filt - hobs_filt_2) ** (1/2.)
 
 #### Save ####
-
+print 'saving data to pickle...'
 pickle.dump(std_bathy, open(output_file, 'wb'))
