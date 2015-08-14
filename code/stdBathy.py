@@ -58,6 +58,7 @@ path_model = '/EcoII/acadia_uni/workspace/simulated/FVCOM/dngridCSR/sample_grid/
 file_model_nc = 'dngridCSR_sample.nc'
 
 #### Output File ####
+path_output = '/array/home/119865c/karsten/std_bathy/'
 output_file = 'DG_stdbathy_triArea_dngridCSR.p'
 
 #### Bounding Box ####
@@ -193,4 +194,4 @@ for i, roi in enumerate(ROImod):
 
 #### Save ####
 print 'saving data to pickle...'
-pickle.dump(std_bathy, open(output_file, 'wb'))
+pickle.dump(std_bathy, open(path_output + output_file, 'wb'))
