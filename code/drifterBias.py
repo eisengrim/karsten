@@ -197,7 +197,7 @@ def parseArgs():
             + "directory. Name is in the form YYYY_Mmm_DD_3D", \
             metavar='dirname', type=str)
     parser.add_argument("--bfric", '-B', help="select a bottom " \
-            + "friction.", nargs=1, choices=('0.009','0.012','0.015'), \
+            + "friction.", nargs=1, choices=('0.009','0.012','0.015','0.020'), \
             default='0.015', type=str)
     parser._optionals.title = 'optional flag arguments'
     parser.add_argument("--write", '-w', help='records initial positions of ' \

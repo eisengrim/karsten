@@ -442,7 +442,7 @@ def parseArgs():
     parser.add_argument("--tight", '-t', action='store_true', \
             help="constricts the subdomain region when plotting spatially.")
     parser.add_argument("--bfric", '-B', help='define a bottom friction.', \
-            nargs=1, choices=('0.009','0.012','0.015'), default='0.015', \
+            nargs=1, choices=('0.009','0.012','0.015','0.020'), default='0.015', \
             type=str)
     parser.add_argument("--ratio", help='use a ratio adjustment', nargs=1, \
             default=1.0, metavar='ratio', type=float)

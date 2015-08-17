@@ -50,29 +50,29 @@ import cPickle as pickle
 ####################
 
 #### Multibeam Depth File ####
-path_MB = '/array/home/119865c/karsten/bathym/'
-file_MB = 'DG_2m_MSL_Data.csv'
+path_MB='/array/home/119865c/karsten/bathym/'
+file_MB='GP_2m_MSL_Data.csv'
 
 #### Model Files ####
-path_model = '/EcoII/acadia_uni/workspace/simulated/FVCOM/dngridCSR/sample_grid/'
-file_model_nc = 'dngridCSR_sample.nc'
+path_model='/EcoII/acadia_uni/workspace/simulated/FVCOM/dngridCSR/sample_grid/'
+file_model_nc='dngridCSR_sample.nc'
 
 #### Output File ####
-path_output = '/array/home/119865c/karsten/std_bathy/'
-output_file = 'DG_stdbathy_triArea_dngridCSR.p'
+path_output='/array/home/119865c/karsten/std_bathy/'
+output_file='GP_stdbathy_triArea_dngridCSR.p'
 
 #### Bounding Box ####
 # Use DG bounding box to define region
-westb = [-65.84, 44.64]
-northb = [-65.73, 44.72]
+# westb = [-65.84, 44.64]
+# northb = [-65.73, 44.72]
 
 # Use PP bounding box to define region
 # westb = [-66.23, 44.37]
 # northb = [-66.19, 44.41]
 
 # Use GP bounding box to define region
-# westb = [-66.38, 44.32]
-# northb = [-66.29, 44.21]
+westb = [-66.38, 44.21]
+northb = [-66.29, 44.32]
 
 #### Projections ####
 # dngridCSR projection

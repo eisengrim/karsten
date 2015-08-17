@@ -275,7 +275,7 @@ def parseArgs():
             + "more matlab drifter files to be read.", metavar='matfile', \
             type=str, default=False)
     parser.add_argument("--bfric", '-B', help="select a bottom " \
-            + "roughness.", nargs=1, choices=('0.009', '0.012', '0.015'), \
+            + "roughness.", nargs=1, choices=('0.009','0.012','0.015','0.020'),\
             default='0.015', required=True, type=str)
     parser._optionals.title = 'optional flag arguments'
     # option to write initial positions

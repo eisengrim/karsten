@@ -13,7 +13,7 @@ from datetime import datetime, timedelta
 
 LOC = 'GP'
 DATE = '2013_Aug_01_3D'
-BF = ['0.015', '0.012', '0.009']
+BF = ['0.015', '0.012', '0.009', '0.020']
 
 
 PATH2SIM="/EcoII/acadia_uni/workspace/simulated/FVCOM/dngridCSR/" \
