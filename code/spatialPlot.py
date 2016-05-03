@@ -141,7 +141,7 @@ def compareSpeeds(model, dir, matfiles, loc, savedir='', debug=False):
 
     for i, name in enumerate(matfiles, start=1):
         drift = Drifter(dir+name, debug=debug)
-        valid = Validation(drift, model, debug=debug)
+        valid = Validation(drift, model, flow='sf', debug=debug)
         if debug:
             print 'creating drifter and validation object...'
 

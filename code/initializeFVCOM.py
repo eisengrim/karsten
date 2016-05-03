@@ -44,7 +44,7 @@ if __name__ == '__main__':
     # adcp = ADCP(PATH_TO_ADCP, debug=True)
 
     # create validation objects
-    valid = Validation(drift, model,debug=True)
-    valid2 = Validation(drift, model2, debug=True)
-    valid3 = Validation(drift, model3, debug=True)
+    valid = Validation(drift, model, flow='sf', debug=True)
+    valid2 = Validation(drift, model2, flow='sf', debug=True)
+    valid3 = Validation(drift, model3, flow='sf', debug=True)
 
