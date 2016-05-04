@@ -1,2 +1,5 @@
 plots/
 code/LagTracker/
+bathym/
+std_bathy/
+*.pyc

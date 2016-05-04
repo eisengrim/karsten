@@ -583,6 +583,7 @@ def spatialRatios(model, lon, lat, uspdO, uspdS, debug=False):
     if debug:
         print '\tcomputing colors...'
     var3 = np.divide(uspeedO3, uspeedS3)
+    # var3 = np.divide(uspeedO3, uspeedS3) # does this produce a different plot?
     # color = np.subtract(var3, np.min(var3)) / (np.max(var3) - np.max(var3))
 
     if debug:

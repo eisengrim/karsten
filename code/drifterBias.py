@@ -249,7 +249,7 @@ def setOptions(args):
         print 'looking for fvcom directory(s)...'
 
     if args.bfric:
-        path2sim = PATH_TO_SIM + 'BFRIC_' + args.bfric + '/'
+        path2sim = PATH_TO_SIM + 'BFRIC_' + args.bfric[0] + '/'
 
     # locate given fvcom file
     if args.dir:
@@ -290,7 +290,7 @@ def createPlots(speedS, speedO, mean, stdev, bias, uspdS, uspdO, lon, lat, \
     # estimate cube ratio
     ratio = sps.cbrt(np.mean(np.power(uspdO,3))/np.mean(np.power(uspdS,3)))
     if debug:
-        print 'speed ratio is: {}'.format(ratio)
+        print 'cubed speed ratio is: {}'.format(ratio)
 
     sns.set(font="serif")
     # create plots
@@ -302,7 +302,7 @@ def createPlots(speedS, speedO, mean, stdev, bias, uspdS, uspdO, lon, lat, \
     ax.scatter(speedS, ubias, alpha=0.25)
     ax.set_xlabel('Model Speed (m/s)')
     ax.set_ylabel('Bias')
-    ax.set_title('Bias vs. Model Speed for BFRIC={}'.format(bfric))
+    ax.set_title('Bias vs. Model Speed for BFRIC={}'.format(bfric[0]))
 
     # determine line of best fit
     if debug:
@@ -317,7 +317,7 @@ def createPlots(speedS, speedO, mean, stdev, bias, uspdS, uspdO, lon, lat, \
             in zip(speedS, ubias)])
     Rsqr = np.round(1-residuals/variance, decimals=5)
     if debug:
-        print '\tR^2 value for bias plot is {}...'.format(Rsqr)
+        print '\tR^2 value for bias v. speed plot is {}...'.format(Rsqr)
     plt.hold('on')
     ax.plot(speedS, m*speedS+b, 'r-')
     plt.grid(True)
@@ -328,9 +328,9 @@ def createPlots(speedS, speedO, mean, stdev, bias, uspdS, uspdO, lon, lat, \
     speedS3 = np.power(speedS, 3)
     speedO3 = np.power(speedO, 3)
     ax1.scatter(speedS3, speedO3, alpha=0.25)
-    ax1.set_xlabel('Model Speed (m/s)')
-    ax1.set_ylabel('Drifter Speed (m/s)')
-    ax1.set_title('Model and Drifter Speed Comparison for BFRIC={}'.format(bfric))
+    ax1.set_xlabel('Model Speed^3 (m/s)')
+    ax1.set_ylabel('Drifter Speed^3 (m/s)')
+    ax1.set_title('Model and Drifter Speed Comparison for BFRIC={}'.format(bfric[0]))
 
     coeff = np.polyfit(speedS3, speedO3, 1)
     m = coeff[-2]
