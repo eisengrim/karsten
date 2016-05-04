@@ -1,0 +1,107 @@
+
+%-----------------------------------------------------------------------------
+% Chapter: Introduction
+%-----------------------------------------------------------------------------
+
+\chapter{Introduction to the Acadia Style}
+\label{chap:INTRO}
+
+The Acadia thesis style relies on the file \verb|acadia-hon-thesis.sty|.
+This file needs to be included where \LaTeX\ can find it.  The
+simplest thing to do is to put it in the same directory as the rest of
+your thesis.
+
+To customize your thesis with your own name and the name of your
+supervisor, convocation date, etc., simply rely on the predefined
+commands in the style.  Your information is inserted into your
+document by editing the file \verb|preliminaries.tex|.  Once you have
+filled in your details the template will format it appropriately.
+NOTE: if you \emph{must} update the template you will have to edit the
+\verb|acadia-hon-thesis.sty| file.  And if you have to edit it because
+there is a problem or Acadia regulations have changed, please let
+\href{mailto:jim.diamond@acadiau.ca}{Jim Diamond} know, so he can fix
+up the public version.
+
+We now discuss the relevance of the contents of the 
+\verb|preliminaries.tex| file.
+
+\smallskip
+\noindent\verb|\title{Thesis Title}|: insert the title of your thesis
+between the open and close braces of the \verb|\title| command.
+
+\smallskip
+\noindent\verb|\author{NAME IN FULL}|: use this to set your name.
+
+\smallskip
+\noindent\verb|\dept{Your department}|: use this to set the department
+or school (e.g., ``Computer Science'', ``Mathematics'', \dots)
+
+\smallskip
+\noindent\verb|\deptOrSchool{whichever it is}|: use this to indicate
+whether you are in a ``Department'' or a ``School''.  Don't forget to
+capitalize!  (And don't use quotation marks.)
+
+\smallskip
+\noindent\verb|\submissionMonth{month name}|: enter the month of your
+thesis submission (``March'' for most honours students).
+
+\smallskip
+\noindent\verb|\submissionYear{20XX}|: Enter the year of your
+thesis submission.
+
+\smallskip
+\noindent\verb|\copyrightYear{20XX}|: the copyright year of your thesis.
+(Just in case it is not the same as the submission year for some reason.)
+
+\smallskip
+\noindent\verb|\supervisor{Dr.~Your Supervisor}|: your supervisor's
+name.  Use a ``\verb|~|'', \textbf{not} a space, between your
+supervisor's title and first name (as well as the following
+dignitaries), for reasons explained later in this document.
+
+\smallskip
+\noindent\verb|\cosupervisor{Dr.~Your Other Supervisor}|: if you
+required lots and lots of supervision, enter your co-supervisor's name.
+
+\smallskip
+\noindent\verb|\headOrDirector{Dr.~The Head or Director}|: the current
+head of your department or director of your school.  If he or she is
+an ``acting director'' or ``acting head'', remove the \verb|%| from
+the line \verb|% \justActing| in \verb|preliminaries.tex|.
+
+\smallskip
+\noindent\verb|\honoursCommittee{Dr.~The Honours Committee Rep}|:
+the current honours committee person, whose name appears on the
+signature page of your thesis.  Part of your research effort is
+figuring out who this is.  Seriously.
+
+\smallskip
+Next we begin the sections that create some output for you and your
+readers to admire.
+
+\smallskip
+\noindent\verb|\firstThreePages|: this command instructs the template
+to output the first three pages (duh) of your thesis.
+
+\smallskip
+\noindent\verb|\Acknowledgments|: this begins the acknowledgments
+section.  Be eloquent and yet concise.
+
+\smallskip
+\noindent\verb|\tocAndSuch|: this instructs the template to output
+the table of contents, the list of figures, the list of tables, and so
+on.
+
+\smallskip
+\noindent\verb|\prefacesection{Abstract}|: this begins your abstract.
+
+\smallskip
+\noindent\verb|\afterpreface|: this instructs the template to
+(1)~output the table of contents, and, as appropriate, the list of
+figures, list of tables, list of algorithms and list of listings,
+(2)~change the page numbering from Roman numerals to Arabic, and
+(3)~prepare to start Chapter~1.
+
+\smallskip
+That's it!  Once you have filled in this template you can start typing
+your thesis and the messy details are taken care of for you.

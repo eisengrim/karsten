@@ -1,0 +1,59 @@
+This is BibTeX, Version 0.99d (TeX Live 2015)
+Capacity: max_strings=35307, hash_size=35307, hash_prime=30011
+The top-level auxiliary file: thesis.aux
+The style file: plainnat.bst
+A level-1 auxiliary file: preliminaries.aux
+A level-1 auxiliary file: getting-started.aux
+A level-1 auxiliary file: introduction.aux
+A level-1 auxiliary file: formatting.aux
+A level-1 auxiliary file: sections.aux
+A level-1 auxiliary file: lists.aux
+A level-1 auxiliary file: citations.aux
+A level-1 auxiliary file: graphics-info.aux
+A level-1 auxiliary file: figures-and-tables.aux
+A level-1 auxiliary file: fine-points.aux
+A level-1 auxiliary file: algorithms-and-listings.aux
+A level-1 auxiliary file: packages.aux
+A level-1 auxiliary file: websites.aux
+Database file #1: thesisbib.bib
+You've used 2 entries,
+            2773 wiz_defined-function locations,
+            622 strings with 5464 characters,
+and the built_in function-call counts, 954 in all, are:
+= -- 88
+> -- 49
+< -- 2
++ -- 17
+- -- 15
+* -- 66
+:= -- 150
+add.period$ -- 10
+call.type$ -- 2
+change.case$ -- 11
+chr.to.int$ -- 2
+cite$ -- 4
+duplicate$ -- 46
+empty$ -- 76
+format.name$ -- 17
+if$ -- 205
+int.to.chr$ -- 1
+int.to.str$ -- 1
+missing$ -- 1
+newline$ -- 21
+num.names$ -- 8
+pop$ -- 26
+preamble$ -- 1
+purify$ -- 9
+quote$ -- 0
+skip$ -- 37
+stack$ -- 0
+substring$ -- 10
+swap$ -- 9
+text.length$ -- 1
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 22
+warning$ -- 0
+while$ -- 7
+width$ -- 0
+write$ -- 40

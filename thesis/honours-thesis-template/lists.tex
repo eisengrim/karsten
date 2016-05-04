@@ -1,0 +1,142 @@
+
+%-----------------------------------------------------------------------------
+% Chapter: 
+%-----------------------------------------------------------------------------
+
+\chapter{Acronyms and Lists}
+\label{chap:ACRONYMS_AND_LISTS}
+
+\section{Defining an Acronym Command}
+
+\TeX\ and \LaTeX\ have very powerful facilities for creating your own
+commands.  So powerful, in fact, that discussing them is well out of
+the scope of this document.  However, we will present one simple
+example here which you may find useful.
+
+Suppose you have some long word or phrase which is used frequently in
+your thesis (such as ``deoxyribonucleic acid''), but you don't want to
+type it over and over.  If you put the following command in your
+document header (\verb|header.tex| in this sample thesis)
+\begin{verbatim}
+\def\dna{deoxyribonucleic acid}
+\end{verbatim}
+then you can just type \verb|\dna| and \LaTeX\ will expand that into
+what you really wanted.  For example, if you now have this text
+
+\def\dna{deoxyribonucleic acid}
+
+\begin{verbatim}
+I try to eat some \dna\ every day.
+I like \dna.
+\end{verbatim}
+you will get this output:
+
+\vspace{6 pt}
+I try to eat some \dna\ every day.
+I like \dna.
+
+\vspace{6 pt}
+
+% Hi, if you are looking at the source code, we note that the \def
+% just has to appear before the first use, not necessarily in the
+% header.
+
+There are \LaTeX\ add-on packages to do all sorts of things for you,
+and one such package handles acronyms in a much more flexible way.
+For example, you might want to define an acronym so that the first
+time it is used you get something like ``Turing Machine (TM)'' and
+from then on the acronym expands to just ``TM''.  If this possibly
+interests you, try doing a search at the Comprehensive TeX Archive
+Network (CTAN) (\url{http://www.ctan.org}).
+
+One final note about this\dots\ as mentioned elsewhere,
+\LaTeX\ ``eats'' spaces following commands such as ``\verb|\dna|''.
+In order to get a space, the first ``\verb|\dna|'' needs to be
+followed by something which causes the space to be preserved.  In the
+second ``\verb|\dna|'', it is immediately followed by punctuation
+(``\verb|.|'' in this case) and so there is no need to do anything
+special.  If you have a hard time remembering this and don't mind a
+bit of extra typing, you could always write ``\verb|{}|'' after
+commands, as follows:
+
+\begin{verbatim}
+I try to eat some \dna{} every day.
+I like \dna{}.
+\end{verbatim}
+you will get this output:\\
+I try to eat some \dna{} every day.
+I like \dna{}.
+
+
+
+
+%------------------------------------------------------------------------------
+% Section: Lists
+%------------------------------------------------------------------------------
+
+\section{Examples of Lists}
+\label{sec:LISTS}
+There are numerous examples of places that we might want to use a
+list.  We might use a described list, which is begun with
+\verb|\begin{description}|, ended with \verb|\end{description}|, and
+where each item is introduced with \verb|\item[...text...]|.  The
+``\verb|...text...|'' for the first item below is ``\verb|First Item|''.
+\begin{description}
+    \item[First Item] This thesis talks about \sysacro.
+    \item[Second] This thesis talks about XML \citep{1188581}.
+    \item[Final Point]  This thesis talks about the future!
+\end{description}
+
+\noindent Or we might want to use a bulleted list, started with
+\verb|\begin{itemize}|, and each \verb|\item| then has no
+\verb|[...text...]|.
+
+\begin{itemize}
+    \item This thesis talks about \sysacro.
+    \item This thesis talks about XML \citep{1188581} by \citealt{1188581}.
+    \item This thesis talks about the future!
+\end{itemize}
+
+\noindent Or we might use a numbered list, where each item is
+introduced with \verb|\begin{enumerate}|, and each \verb|\item| again
+has no \verb|[...text...]|.
+\begin{enumerate}
+    \item This thesis talks about \sysacro.
+    \item This thesis talks about XML \citep{1188581} by \citealt{1188581}.
+    \item This thesis talks about the future!
+\end{enumerate}
+
+\noindent The point is that we have a great deal of flexibility.
+
+One thing that you might not like about the above lists is that there
+are lots of blank lines.  If we add
+\verb|\vspace{-\topsep}|
+\emph{before} the \verb|\begin{itemize}| line and
+\emph{after} the \verb|\end{itemize}| line and
+\vspace{-\topsep}
+\begin{description}
+    \setlength{\itemsep}{0pt}
+    \setlength{\parskip}{0pt}
+    \setlength{\parsep}{0pt}
+    \item[\quad] \verb|\setlength{\itemsep}{0pt}|
+    \item[\quad] \verb|\setlength{\parskip}{0pt}|
+    \item[\quad] \verb|\setlength{\parsep}{0pt}|
+\end{description}
+\vspace{-\topsep}
+\emph{after} the \verb|\begin{itemize}| line, the above bulleted list
+will look like this:
+\vspace{-\topsep}
+\begin{itemize}
+    \setlength{\parskip}{0pt}
+    \setlength{\itemsep}{0pt}
+    \setlength{\parskip}{0pt}
+    \setlength{\parsep}{0pt}
+    \item This thesis talks about \sysacro.
+    \item This thesis talks about XML \citep{1188581} by \citealt{1188581}.
+    \item This thesis talks about the future!
+\end{itemize}
+\vspace{-\topsep}
+that is, with no extra space before, after, or between list items.
+
+Budding \LaTeX\ gurus may prefer to read about and then use the
+\verb|enumitem| package which makes this a lot easier to do.

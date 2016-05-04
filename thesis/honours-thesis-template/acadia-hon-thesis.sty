@@ -1,0 +1,544 @@
+% Acadia University honours thesis template, based on the Acadia
+% masters thesis template, which was originally based on the Stanford
+% University Ph.D. thesis style, updated as described below:
+
+% People are free to borrow as long as they change the name and date
+% in the \typeout lines, the name of the file, and acknowledge the
+% work that has been done by previous people.  Ideally they should
+% comment their changes.
+
+% Original version by Joseph Pallas back in 1989
+% Modified by Emma Pease 5/7/92
+%   added singlespace environment from doublespace.sty
+%   added switches for variant title pages
+%   modified the figure environment according to changes in latex.tex
+%   corrected the signature page due to University rule changes
+%   added an optional third reader to signature page
+% Corrected a spacing problem with style changes 5/14/92 - Emma
+% Modified by Emma Pease 1/10/95
+% Modified for latex2e  5/17/95
+%   changed \@xfloat and \@footnotetext to reflect latex2e changes
+% Modified for latex2e 6/22/95 (Emma Pease)
+%   changed singlespace environment so it would work (taken from
+%   doublespace.sty)
+% Modified 9/8/95 (Emma Pease)
+%   removed doublespace.sty commands and explicitly inputted
+%   doublespace
+% Modified 12/17/96 (Emma Pease)
+%   added optional \coprincipaladvisor (\coprincipaladvisor)
+% Modified 5/29/98
+%   replaced the required doublespace.sty by setspace.sty
+% Modified 8/21/98
+%   added a \businessthesis for the school of business
+% Modified 8/22/98 
+%   added a \lawthesis
+% Modified 8/23/98
+%   spelling error in \businessthesis def corrected
+% Modified 5/14/1999 by Emma Pease
+%   'By' dropped from title page
+% Modified 7/26/1999 by Emma Pease
+%   copyright page fixed
+% Modified 9/28/99 by Emma Pease
+%   more copyright page fixings
+% Modified 10/28/99 by Emma Pease
+%   and more copyright page fixings plus a minor mod on bibliography
+%   need to start thinking of overhauling to standard package format
+% Modified 11/26/99
+%   fixed copyrightyear so that all Fall quarter theses are next
+%   year's copyright
+
+% Modified 5/31/01 by Emma Pease
+%   fixed certification statement.  Setup for twoside option.
+% Modified 6/4/01 by Emma Pease
+%   emphasized that it is unofficial
+% Modified 8/3/01 by Emma Pease
+%   setup so that on twoside if the intro material (page numbered with
+%   Roman numerals) ends on an odd page an extra blank page is included so
+%   the main body (page numbered with Arabic numbers) starts on an odd
+%   absolute page  (explanation modified 5/28/02)
+% Modified 5/28/02 by Emma Pease
+%   made first and second reader optional (not that the first reader
+%   should ever be missing but someone managed to avoid a second reader)
+%   If they aren't defined, they won't appear
+% Modified 7/13/2003 by Emma Pease
+%   dropped signature line for ``Approved for the University Committee
+%   on Graduate Studies'' on signature page.  Also made sure the next
+%   section starts on an odd page if two sided.
+% Modified 11/19/03 by Emma Pease
+%   fixed the bibliography so the addcontentsline works correctly with
+%   hyperref.  Thanks to Peter Sturdza for pointing out this
+
+
+% Changed for Acadia University Master of Science (Computer Science).
+% Karim Rahim Spring 2004
+
+% Acadia University Master of Science (Computer Science) template, updated
+% July 18, 2005 by Greg Leighton
+%	modified Approval of Thesis (page 2) to conform with new guidelines
+%	added field for co-supervisor on signature page
+%	removed unnecessary and outdated macros
+
+% Updated November 30, 2006 by Brian Demmings
+%    Removed field for co-supervisor on signature page and changed from acting
+%               director to director
+%    Added a table of listings (requires the lstlistings package)
+%    Added library permissions pages
+
+% Modified February 12, 2007 by Jim Diamond
+% - various cleanup/optimizations
+
+% Modified June 24, 2007 by Jim Diamond
+% - yet more cleanup/optimizations
+% - made default page dimensions suitable for Acadia theses.
+
+% Modified winter/spring 2012 by Alex Sanford and Jim Diamond to make
+% it implement Acadia honours thesis requirements.
+
+% Modified March 30, 2014 by Jim Diamond to further parameterize
+% and regularize the style file, and to make the honours and masters
+% style files as similar as possible.
+
+% Modified April 27, 2015 by Jim Diamond to not output ``in <discipline>''
+% on the title page for students in a school.
+% Added the (commented-out) code for tweaking the spacing between
+% table of contents lines.
+% Added the (mostly commented-out) code for (trying to) deal with widows and
+% clubs (sometimes known as widows and orphans, as well as other names).
+% Deleted a few lines of cruft.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%% ---------------  Ideas for dealing with widows and clubs -----------------
+%
+% A widow is a single line at the top of a page.
+% A club is a single line at the bottom of a page.
+% (Other people use different names.  Moving on...)
+
+% Widows and clubs are typographically displeasing, and so by default
+% the TeX typesetting engine has a moderate dislike for widows and
+% clubs and will try to break paragraphs (when spitting out a page) to
+% avoid them.  However, if you have lots of figures, tables, listings,
+% or other such non-textual stuff, or if you like to write short
+% paragraphs, you may find that TeX/LaTeX is not able to avoid them.
+
+% Depending on your supervisor and the other readers you may get no
+% grief or lots of grief.  This commented out code discusses a couple
+% of handraulic techniques for dealing with the problem.  You should
+% not waste your time playing with this until you are about to hand a
+% ``final draft'' to the reader(s).
+
+% (1) TeX has two parameters that you can adjust to affect how much it
+% dislikes widows and clubs.  By default, it gives a ``penalty'' of 150
+% to a page any time it would have a widow or club.  That is a minor
+% penalty; a penalty of 10000 (the highest meaningful value) means
+% (very roughly) ``only do this if there is no better alternatives''.
+% You can set the penalties to larger values by uncommenting the
+% following two lines and tweaking the numbers:
+% \clubpenalty=9999
+% \widowpenalty=10000
+
+% (2) While the honours regulations want uniform margins, no one seems
+% to squeal if the page is a bit short.  So there are two things you
+% can do to affect things everywhere or on a given page (respectively):
+% (a) if you uncomment the next line
+% \raggedbottom
+%     you will invoke some code which may or may not make your life
+%     better.  (This is ``plain TeX'' code which may or may not work in
+%     LaTeX, if anyone can provide a definitive answer let JD know.)
+% (b) anywhere in your document where you want a page break between
+%     paragraphs or before a new section, if there is not AT LEAST a 
+%     given amount of space left, insert a line like
+%            \need 1.4 in
+%     to tell LaTeX to start a new page if there isn't at least 1.4 inch
+%     left on the current page.  This is better than inserting an
+%     unconditional page break, because if you later edit your
+%     document and the text moves around, you won't have a page break
+%     appearing where you don't want it.
+%     For example, if you find a new section shows up too close to the
+%     bottom of a page, you can put
+%	\need 2 in
+%       \section{some new section}
+%     to only start that new section on the current page if there is
+%     at least 2 inches of space left on the current page.
+\def\need{\afterassignment\zneed\dimen@=}
+\def\zneed{\relax
+    \ifnum\pagetotal>\pagegoal  % Page may be full, but not yet gone
+        % See if we can easily (0.3\pageshrink?) shrink the page to fit...
+        % If so, bite the bullet & eject the page
+        \dimen@=\pagetotal
+        \advance\dimen@ by -0.3\pageshrink
+        \ifnum\dimen@<\pagegoal
+            \eject
+         \else
+            \penalty-500
+        \fi
+    \else
+        \vskip 0pt \par
+        \ifnum\pagetotal>\pagegoal
+            % At great risk, assume an \eject is safe here, since all
+            % we've added is glue to get past the end of the page
+            \eject
+        \fi
+        \advance\dimen@ by \pagetotal
+        \ifdim\dimen@>\pagegoal
+            \vfill\eject
+        \fi
+    \fi
+}
+
+% (3) If all else fails, rewrite a sentence or two.  Not kidding.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%
+%%%%%   PRELIMS
+%%%%%
+
+\typeout{Document Style Option `acadia-hon-thesis' for latex2e <$Date: 2015/04/28$>.}
+\typeout{Note that the authors believe this fulfills the current}
+\typeout{Acadia University honours thesis requirements, but it has}
+\typeout{not received official confirmation.}
+
+% First thing we do is make sure that report has been loaded.
+% A common error is to try to use acadia-hon-thesis as a document style.
+\@ifundefined{chapter}{\@latexerr{The `acadia-hon-thesis' option
+    should be used with the `report' document style}{You should
+    probably read the acadia-hon-thesis documentation.}}{}
+
+%%%%%
+%%%%%   DOCUMENTATION
+%%%%%
+
+\long\def\comment#1{}
+\comment{
+    With luck, you won't need to modify acadia-hon-thesis.sty or header.tex.
+    
+    In thesis.tex, you should delete the indicated lines immediately
+    following ``\begin{document}'' down to the ``END OF START NOTE'' line.
+    After that, replace all the lines which \include chapters and appendices
+    with the ones which include your chapters and appendices.
+    
+    In preliminaries.tex, you will want to edit the personalization lines;
+    here is an example:
+    
+    \title{A Practical Investigation of Mustard on Chocolate Cake}
+    \author{Bob Smith}
+    \dept{Music}
+    \deptOrSchool{School}   % or Department
+    \degree{Arts}
+    
+    \submissionMonth{April}
+    \submissionYear{2018}
+    \copyrightYear{2018}
+
+    % Use a "~" after the "r." of "Dr." so that TeX doesn't think you have
+    % ended a sentence (at which point it gives extra space).
+    \supervisor{Dr.~Samuel Kazoo}
+
+    % Remove the '%' from the next line and fill in the name if desired.
+    %\cosupervisor{(Dr.~Your Other Supervisor)}
+
+    \headOrDirector{Dr.~Johann Liszt}
+    % If the head or director is an ``acting'' head or director, uncomment
+    % the next line (i.e., delete the '%'):
+    % \justActing
+    
+    % You will have to ask around to find out the name of the person
+    % to put here... it changes year to year.
+    \honoursCommittee{Dr.~Read And Write}
+
+    The following switches allow for special frontmatter pages; if you
+    wish to use them, put them in thesis.tex between ``\include{header}''
+    and ``\begin{document}'':
+	\algorithmspagetrue   % If you have numbered algorithms in your thesis
+	\listingspagetrue     % If you have numbered listings in your thesis
+	\figurespagefalse     % If you have no numbered figures in your thesis
+	\tablespagefalse      % If you have no numbered tables in your thesis
+}
+
+%%%%%
+%%%%%   SETUP DOUBLE SPACING
+%%%%%
+
+% include doublespace.sty for some of the stuff below
+\RequirePackage{setspace}
+
+% Use 1.3 times the normal baseline-to-baseline skip
+\setstretch{1.3}
+
+%%%%%
+%%%%%   SETUP MARGINS AND PENALTIES
+%%%%%
+
+% We need 1" margins except on the binding edge, where it is 1 1/2"
+% Theses may be either single or double sided
+\if@twoside
+    \setlength\evensidemargin  {0 in}
+\else
+    \setlength\evensidemargin  {0.5 in}
+\fi
+
+\setlength\oddsidemargin   {0.5in}
+\setlength\marginparwidth  {40\p@}
+
+\topmargin 0.0in
+\headsep .5in
+\textheight 8.1in
+\textwidth 6in
+
+
+% Disallow page breaks at hyphens (this will give some under-full vbox's,
+% so an alternative is to use \brokenpenalty=100 and manually search
+% for and fix such page breaks)
+\brokenpenalty=10000
+
+%%%%%
+%%%%%   SETUP COMMANDS PECULIAR TO THESES
+%%%%%
+
+% \author, \title are defined in report; here are the rest of the
+% front matter defining macros
+\def\dept#1{\gdef\@dept{#1}}
+\def\deptOrSchool#1{\gdef\@deptOrSchool{#1}}
+\def\degree#1{\gdef\@degree{#1}}
+\def\submissionMonth#1{\gdef\@submissionmonth{#1}}
+\def\submissionYear#1{\gdef\@submissionyear{#1}}
+\def\supervisor#1{\gdef\@supervisor{#1}}
+\def\cosupervisor#1{\@cosupervisedtrue\gdef\@cosupervisor{#1}}
+\def\headOrDirector#1{\gdef\@director{#1}}
+\def\justActing{\@directorIsActingtrue}
+\def\honoursCommittee#1{\gdef\@honoursboss{#1}}
+\def\copyrightYear#1{\gdef\@copyrightyear{#1}} % \author, \title in report
+
+\def\@title{}
+\def\@author{}
+\def\@dept{}
+\def\@deptOrSchool{}
+\def\@degree{}
+
+% If you don't know why this is here, don't touch it!
+\def\@Skule{School}
+
+
+\newif\ifcopyright	    \copyrighttrue
+\newif\iffigurespage	    \figurespagetrue
+\newif\iftablespage	    \tablespagetrue
+\newif\ifthesiscopyright    \thesiscopyrighttrue
+\newif\if@cosupervised	    \@cosupervisedfalse
+\newif\if@directorIsActing  \@directorIsActingfalse
+
+% Add support for "List of Listings" and "List of Algorithms" pages in
+% the frontmatter of your thesis:
+\newif\iflistingspage
+\newif\ifalgorithmspage
+% Those pages are turned off by default; to get whichever one(s) you
+% want, add
+%	\listingspagetrue
+% or
+%	\algorithmspagetrue
+% (WITHOUT the % !) in thesis.tex BEFORE the ``\begin{document}'' line. 
+
+\def\titlep{%
+    \thispagestyle{empty}
+    \null
+    \vskip 0.9 in
+    \begin{center}
+	{\bf{\uppercase\expandafter{\@title}}}
+	\vskip .5 in
+	by
+	\vskip .5 in
+	\@author
+        \vfill
+	Thesis submitted in partial fulfillment of the
+	\vskip .15 in
+	requirements for the Degree of
+	\vskip .15 in
+	Bachelor of \@degree{} with
+	\vskip .15 in
+	Honours \ifx\@Skule\@deptOrSchool\else in \@dept\fi
+	\vfill
+	Acadia University
+	\vskip .2 in
+	\@submissionmonth\ \@submissionyear
+	\vskip .2 in
+	\copyright{} Copyright by \@author, \@copyrightyear
+    \end{center}
+    \newpage
+}
+
+% Notes to LaTeX tweakers/hackers:
+% The \vfills and \vskip are to place the text roughly at the same place
+% as the RGS honours thesis sample page.
+% The ~s in ``in~my~thesis'' attempt to ensure we don't end up with a
+% fourth line with just one or two words.
+\def\copyrightpage{%
+    \null
+    \vfill
+    \begin{spacing}{1}
+    \begin{center}
+        I, \@author{}, grant permission to the University Librarian at
+        Acadia University to reproduce, loan, or distrubute copies of
+	my thesis in microform, paper or electronic formats on a
+	non-profit basis. I, however, retain the copyright in~my~thesis.
+
+	\vspace{0.75 in}
+
+	\rule{2.5in}{1pt}\\
+	Signature of Author
+
+        \vspace{0.6 in}
+
+	\rule{2.5in}{1pt}\\
+	Date
+    \end{center}
+    \end{spacing}
+    \vfill\vskip .8 in
+    \newpage
+}
+
+\def\approvalpage{%
+    \begin{center}
+    This thesis by \@author{}\\    
+    is accepted in its present form by the\\    
+    \@deptOrSchool\ of \@dept\\    
+    as satisfying the thesis requirements for the degree of\\    
+    Bachelor of \@degree\ with Honours
+
+    \vspace{0.85in}
+    \if@cosupervised
+	Approved by the Thesis Supervisors
+    \else
+	Approved by the Thesis Supervisor
+    \fi
+
+    \vskip 0.35in
+    \rule{2.5in}{1pt}%
+    \hskip .1in
+    \rule{2.5in}{1pt}
+
+    \leavevmode
+    \hbox{\hbox to 2.5 in{\hss\@supervisor\hss}%
+          \hskip .1in
+          \hbox to 2.5 in{\hss Date\hss}}
+
+    \if@cosupervised
+        \vskip 0.35in
+        \rule{2.5in}{1pt}%
+	\hskip .1in
+        \rule{2.5in}{1pt}
+
+        \leavevmode
+	\hbox{\hbox to 2.5 in{\hss\@cosupervisor\hss}%
+	      \hskip .1in
+              \hbox to 2.5 in{\hss Date\hss}}
+    \fi
+
+    \vskip 0.35in
+    % As of June 1, 2012 the regulations don't talk about this case.
+    % Shortcoming in the regulations?  I sent a Q in to head of honours
+    % committee (Pritam Ranjan) but implemented this anyway.
+    \ifx\@Skule\@deptOrSchool
+	Approved by the \if@directorIsActing Acting \fi Director of the School
+    \else
+	Approved by the \if@directorIsActing Acting \fi Head of the Department
+    \fi
+    \vskip 0.35in
+    \rule{2.5in}{1pt}%
+    \hskip .1in
+    \rule{2.5in}{1pt}
+
+    \leavevmode
+    \hbox{\hbox to 2.5 in{\hss\@director\hss}
+      \hskip .1in
+      \hbox to 2.5 in{\hss Date\hss}}
+
+    \vskip 0.35in
+    Approved by the Honours Committee
+    \vskip 0.35in
+    \rule{2.5in}{1pt}%
+    \hskip .1in
+    \rule{2.5in}{1pt}
+    
+    \leavevmode
+    \hbox{\hbox to 2.5 in{\hss\@honoursboss\hss}%
+          \hskip .1in
+          \hbox to 2.5 in{\hss Date\hss}}
+
+    \end{center}
+    \newpage
+}
+
+
+\def\firstThreePages{%
+    \pagenumbering{roman}
+    \pagestyle{plain}
+    \titlep
+    % Don't have the signature page on the back of the title page!  Blech!
+    \if@twoside
+        \null\vfill\newpage
+    \fi
+    \approvalpage
+    % Ditto for the copyright page.
+    \if@twoside
+        \null\vfill\newpage
+    \fi
+    \copyrightpage
+}
+
+\def\tocAndSuch{%
+    \rmfamily
+    % If you need to shrink the spacing between table of contents
+    % lines (for example, so that you don't end up with one ToC entry
+    % on a page by itself) uncomment the following '\begin{spacing}'
+    % line *AND* the \end{spacing} line (remove the '%').  You might
+    % need to further tweak the 1.25 value.  Wash, rinse, repeat.
+    % (Don't bother doing this until you have a ``final'' copy, or at
+    % least a ``final'' draft for your supervisor.)
+    %\begin{spacing}{1.25}
+    \tableofcontents
+    %\end{spacing}
+
+    \iftablespage
+        \listoftables
+    \fi
+
+    \iffigurespage
+        \listoffigures
+    \fi
+
+    \iflistingspage
+        \lstlistoflistings
+    \fi
+
+    \ifalgorithmspage
+        \listofalgorithms
+    \fi
+}
+
+
+\def\Acknowledgments{%
+    \chapter*{Acknowledgements}
+}
+        
+
+\def\prefacesection#1{%
+    \chapter*{#1}
+    \addcontentsline{toc}{chapter}{#1}
+}
+
+\def\afterpreface{%
+    \cleardoublepage
+    \pagenumbering{arabic}
+    \pagestyle{headings}
+}
+
+% Redefine \thebibliography to go to a new page and put an entry in the
+% table of contents
+\let\@ldthebibliography\thebibliography
+\renewcommand{\thebibliography}[1]{\newpage
+                \@ldthebibliography{#1}%
+\addcontentsline{toc}{chapter}{\bibname}}
+
+% Start out normal
+\pagestyle{headings}

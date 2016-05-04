@@ -1,0 +1,96 @@
+%---------------------------------------------------------
+% Chapter: A chapter about citations
+%----------------------------------------------------------
+\chapter{Citations}
+\label{sec:CITATIONS}
+
+The ``normal'' citation capabilities can be lacking in functionality.
+For instance, \cite[TEST]{COOKIE} doesn't tell us anything about the
+``cookie'' article within the paper and we have to manually track
+authors, etc.
+
+To solve this, we will look at the \verb|natbib| citation package.  We
+can cite the same paper in many different ways: \citet{1188581},
+\cite{1188581}, \citep[see][]{1188581}, \citep[see][chapter
+1]{1188581}, \citep[chapter 1]{1188581}, \citealt{1188581},
+\citealt*{1188581}.
+			
+\smallskip
+For more information, visit
+\href{http://merkel.zoneo.net/Latex/natbib.php}{http://merkel.zoneo.net/Latex/natbib.php}.
+
+\begin{centering}
+    \begin{description}
+	\item[citet] Textual citations (i.e., \verb|\citet|).
+	\item[citep] Parenthetical citations (i.e., \verb|\citep|).
+    \end{description}
+\end{centering}
+
+\begin{table}[ht]
+    \footnotesize
+    \centering
+    \caption{Citation commands and results, in textual or parenthetical style.}
+    \begin{tabular}[ht]{llll}
+	\hline
+	Command & T & P & Result \\
+	\hline
+	\verb|\citet{jon90}| & x &   & Jones et al. (1990) \\
+	\verb|\citet[chap. 2]{jon90}| & x & & Jones et al. (1990, chap. 2)\\
+	\verb|\citep{jon90}| & & x &(Jones et al., 1990)\\
+	\verb|\citep[chap. 2]{jon90}| & & x &(Jones et al., 1990, chap. 2)\\
+	\verb|\citep[see][]{jon90}| & & x &(see Jones et al., 1990)\\
+	\verb|\citep[see][chap. 2]{jon90}| & & x &(see Jones et al.,
+		1990, chap. 2)\\ 
+	\verb|\citet*{jon90}| & x & &Jones, Baker, and Williams (1990)\\
+	\verb|\citep*{jon90}| & & x &(Jones, Baker, and Williams, 1990)\\
+	\hline
+    \end{tabular}
+\end{table}
+
+\begin{table}[ht]
+    \footnotesize
+    \centering
+    \caption{Multiple citations.}
+    \begin{tabular}[ht]{llll}
+	\hline
+	Command & T & P & Result \\
+	\hline
+	\verb|\citet{jon90}| & x & & Jones et al. (1990) \\
+	\verb|\citet{jon90,jam91}| & x & & Jones et al. (1990); James et
+		al. (1991)\\ 
+	\verb|\citep{jon90,jam91}| & & x & (Jones et al., 1990; James
+		et al. 1991)\\ 
+	\verb|\citep{jon90,jon91}| & & x & (Jones et al., 1990, 1991)\\
+	\verb|\citep{jon90a,jon90b}| & & x & (Jones et al., 1990a,b)\\
+	\hline
+    \end{tabular}
+\end{table}
+
+\begin{table}[ht]
+    \footnotesize
+    \centering
+    \caption{Numerical Mode citations.}
+    \begin{tabular}[ht]{llll}
+	\hline
+	Command & T & P & Result \\
+	\hline
+	\verb|\citet{jon90}| & x & & Jones et al. (1990) \\
+	\verb|\citet{jon90}| & x & & Jones et al. [21]\\
+	\verb|\citet[chap. 2]{jon90}| & x & & Jones et al. [21, chap. 2]\\
+	\verb|\citep{jon90}| & & x & [21]\\
+	\verb|\citep[chap. 2]{jon90}| & & x & [21, chap. 2]\\
+	\verb|\citep[see][]{jon90}| & & x & [see 21]\\
+	\verb|\citep[see][chap. 2]{jon90}| & & x & [see 21, chap. 2]\\
+	\verb|\citep{jon90a,jon90b}| & & x & [21, 32]\\
+	\hline
+    \end{tabular}
+\end{table}
+
+If you are reading the PDF version of this document, you will see
+green boxes around links to the bibliography, red boxes around other
+``internal'' links and blue (or is it cyan?\null) boxes around
+external links.  If you don't like this, you can change it to look how
+you like.  For example, you can lose the boxes altogether and leave it
+to the reader to mouse over things to discover whether or not they are
+links.
+

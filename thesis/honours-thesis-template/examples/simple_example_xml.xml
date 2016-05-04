@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<first>
+  <second>
+    <z>Simple content</z>
+    <e attrib="1"/>
+  </second>
+  <third>
+    <e attrib="2"/>
+  </third>
+</first>

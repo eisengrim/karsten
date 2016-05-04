@@ -1,0 +1,23 @@
+\begin{thebibliography}{2}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Community(2007)]{COOKIE}
+Wikipedia Community.
+\newblock Cookie.
+\newblock Wikipedia, 2007.
+\newblock URL \url{http://en.wikipedia.org/wiki/Cookie}.
+
+\bibitem[Head et~al.(2006)Head, Govindaraju, van Engelen, and Zhang]{1188581}
+Michael~R. Head, Madhusudhan Govindaraju, Robert van Engelen, and Wei Zhang.
+\newblock Grid scheduling and protocols---benchmarking xml processors for
+  applications in grid web services.
+\newblock In \emph{SC '06: Proceedings of the 2006 ACM/IEEE conference on
+  Supercomputing}, page 121, New York, NY, USA, 2006. ACM Press.
+\newblock ISBN 0-7695-2700-0.
+\newblock \doi{http://doi.acm.org/10.1145/1188455.1188581}.
+
+\end{thebibliography}

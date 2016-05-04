@@ -1,0 +1,99 @@
+
+%---------------------------------------------------------
+% Chapter: A chapter about typesetting.  See https://xkcd.com/1015/
+%----------------------------------------------------------
+
+\chapter{Some Fine Points of Typesetting}
+
+No-one expects an honours or masters thesis to be a world-class
+example of typography (unless, I suppose, you are studying that
+discipline).
+However, that doesn't mean you shouldn't put a tiny bit more effort in
+to make it look as nice as possible.  \TeX\ already takes care of many
+of the details for you, but you can help \TeX\ out every now and then.
+
+\section{Non-Breakable Spaces}
+
+In some situations you may want to tell \TeX\ to \emph{not} put a
+line-break between two particular words.  For example, you would not
+want ``Section'' to be at the end of one line and ``3.2.1'' to be at
+the beginning of the next line.  Similarly you don't want ``Figure'',
+``Table'', ``Algorithm'', ``Listing'', and so on at the end of one
+line and the corresponding number at the beginning of the next line.
+(Especially if the next line is at the top of the next page!)
+
+Any time you want to keep to words together, use a ``\verb|~|''
+instead of a space between the two words.  For example, earlier you
+saw ``\verb|Definition~\ref{def:COOKIE}|''; the ``\verb|~|'' ensures
+that the reference number for COOKIE (\ref{def:COOKIE}) does not end
+up at the beginning of a line.
+
+To avoid having the last word in a paragraph on a line by itself, but
+a \verb|~| between the last two words in the paragraph.  Caution: with
+a \textbf{very} short paragraph, this may do more harm than good.  But
+you should avoid very short paragraphs anyway (in most situations).
+
+\need 1in
+
+\section{Inter-Sentence Spacing}
+
+In English typography, it is customary to have more space between the
+word at the end of a sentence and the word at the beginning of the
+next sentence.  Look at the first paragraph in this chapter and you can see
+what I mean.   \TeX\ has a heuristic to automagically add this extra space
+for you.
+
+Namely, normally a ``\verb|.|'', ``\verb|?|'', or ``\verb|!|'' ends a
+sentence when it is followed by white space (or it is at the end of a
+line).  However, this rule is not always correct.  For example, in
+``I saw H.M.~Schmoe downtown.\null'' the period after ``M'' is not a
+sentence-ending period.  \TeX\ assumes this is the case because the
+letter before the period is upper-case.
+
+However, sometimes you might end a sentence after an abbreviation:
+``Hamiltonian Cycle is in NP.''  To tell \TeX\ that this is a
+sentence-ending period, you can separate the upper case letter from
+the period as follows: ``\verb|NP\null.|''.
+
+On the other hand, if you say ``My dog's name is Mr.~Smith'' you do
+not want \TeX\ to treat ``Mr.\null'' as the end of a sentence.  In
+this case if you write ``\verb|Mr.~Smith|'' then \TeX\ will use the
+normal amount of inter-word space (and, as a bonus, you won't end up
+with ``Mr.\null'' at the end of a line and ``Smith'' at the beginning
+of the next line).
+
+\section{Hyphens and Dashes}
+
+There are four separate typographic symbols which you might be tempted
+to use the same keyboard character for: ``-'', ``--'', ``---'' and ``$-$''.
+The first is a hyphen, used for (wait for it\dots) hyphenated words,
+such as ``multi-faceted''.  The second is known as an ``en-dash'', and
+should be used when writing a numeric range such as ``40--45''.  The
+third is known as an em-dash, and is used --- according to some styles
+--- to set off parts of a sentence.  Finally, $-$ is an arithmetic
+operator.  These four symbols are obtained with ``\verb|-|'',
+``\verb|--|'', ``\verb|---|''and ``\verb|$-$|'', respectively.
+
+
+\section{Clubs and Widows}
+
+
+A \emph{widow} is a single line at the top of a page.  A \emph{club}
+is a single line at the bottom of a page.  (Other people use different
+names, including \emph{orphan}.  Moving on\dots)  I told you that so I
+can tell you this.
+
+Widows and clubs are typographically displeasing, and so by default
+the \TeX\ typesetting engine has a moderate dislike for widows and
+clubs and will try to break paragraphs (when spitting out a page) to
+avoid them.  However, if you have lots of figures, tables, listings,
+or other such non-textual stuff, or if you like to write short
+paragraphs, you may find that \TeX/\LaTeX\ is not able to
+automatically avoid them.
+
+This is something you should only worry about when you are very close
+to the final copy of your thesis, since minor edits can cause the
+content of many following pages to move around.  When you are almost
+done, if you want to deal with clubs and widows, read the blurb in
+\verb|acadia-hon-thesis.sty| which gives you some information about
+going this last typographic mile.

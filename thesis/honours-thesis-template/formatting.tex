@@ -1,0 +1,263 @@
+\chapter{Formatting Points of Interest}
+\label{chap:FORMATTING}
+
+\section{One or Two Sides?}
+
+You might have noticed that the left margin on odd pages is much
+larger than the left margin on even pages.  This positions the text on
+the page to allow the thesis to be printed on both sides of the paper
+and bound.
+
+If for some reason you wish the margins to be the same on both sides
+of the page, look in \verb|header.tex| for the line
+\verb|\documentclass[12pt,twoside,openright]{report}| and change
+it to \verb|\documentclass[12pt]{report}|.
+
+You may have also noticed that chapters (as well as the abstract, the
+list of figures, and so on) always start on a right-hand (i.e.,
+odd-numbered) page.  If you want a two-sided document but you are OK
+with having a chapter start on a left-hand page (seriously??\null),
+remove ``\verb|,openright|'' from the ``\verb|\documentclass|'' line.
+
+If, when creating a two-sided document, you want the signature page to
+be on the back of the title page (which is just so wrong), you will
+need to break~(sic) things in the \verb|\firstThreePages| command in
+the file \verb|acadia-hon-thesis.sty|.
+
+%-----------------------------------------------------------------
+% Section: Emphasis
+%-----------------------------------------------------------------
+\section{Emphasis}
+In \LaTeX\ and \TeX\ spacing and text ``prettying'' (e.g.,
+\textit{italics}, \textbf{bold}, etc.\null) are integral parts of
+properly typesetting a document.  In a word processor, such issues are
+often left up to the user, however, it is often advantageous to let
+the typesetter do it for you.  For example, given the text (from
+MacBeth):
+
+\begin{quote}
+They met me in the day of success: and I have\\
+learned by the perfectest report, they have more in\\
+them than mortal knowledge\dots
+\end{quote}
+
+\noindent how would you \emph{emphasize} a certain word?  In a word
+processor you might choose to \textit{italicise} it using
+\verb|\textit{success}|:
+
+\begin{quote}
+They met me in the day of \textit{success}: and I have\\
+learned by the perfectest report, they have more in\\
+them than mortal knowledge\dots
+\end{quote}
+
+\noindent But what if the quotation was instead written
+
+\begin{quote}
+\itshape
+They met me in the day of \textit{success}: and I have\\
+learned by the perfectest report, they have more in\\
+them than mortal knowledge\dots
+\end{quote}
+
+\noindent Now \textit{italics} has no clear emphasis at all.  In
+\LaTeX, we use the \verb|\emph{success}| command to indicate
+emphasis.  If we emphasize \emph{success} in the previous quotations we
+get: 
+
+\begin{quote}
+They met me in the day of \emph{success}: and I have\\
+learned by the perfectest report, they have more in\\
+them than mortal knowledge\dots
+\end{quote}
+
+\noindent but if the quotation was itself italicised
+
+\begin{quote}
+\itshape
+They met me in the day of \emph{success}: and I have\\
+learned by the perfectest report, they have more in\\
+them than mortal knowledge\dots
+\end{quote}
+
+\noindent \verb|emph{...}| actually \textit{de-italicises} the
+enclosed text, which ensures that it nonetheless stands out.  In a
+word processor we would have to manually change the style of emphasis,
+whereas \LaTeX\ takes care of it for us automagically.
+
+%-----------------------------------------------------------------
+% Section: Spacing
+%-----------------------------------------------------------------
+\section{Spacing}
+Spacing is another contentious issue in \LaTeX. The compiler assumes
+that most spacing is simply used to aid in reading the \LaTeX\ code,
+rather than to provide whitespace in the typeset document.  For
+example, the simple text:
+\begin{verbatim*}
+``We write text on 
+    multiple lines with    random spacing      between
+ words, and \LaTeX does the right 
+                                     thing and groups it
+                                     all together.''
+\end{verbatim*}
+
+\noindent results in 
+
+\vspace{6 pt}
+
+``We write text on 
+    multiple lines with    random spacing      between
+ words, and \LaTeX does the right 
+                                     thing and groups it
+                                     all together.''
+
+\vspace{6 pt}
+
+How about the space after ``\verb|\LaTeX|''\null? Well, this raises an
+important point. Sometimes \LaTeX\ does \emph{not} seem to do the right
+thing.  In this instance, it has ``eaten'' the space after the
+command.  In cases like this we must enforce the space using
+\verb*|\ |, where \verb*| | indicates a single space.  We can also use
+this to force the compiler to leave a number of spaces.  Let's revisit
+our example, with this in mind: 
+\begin{verbatim*}
+``We write text on 
+    multiple lines with\ \ \ \ random spacing      between
+ words, and \LaTeX\ does the right 
+                                     thing and groups it
+                                     all together.''
+\end{verbatim*}
+
+\noindent becomes:
+
+\vspace{6 pt}
+
+``We write text on 
+    multiple lines with\ \ \ \ random spacing      between
+ words, and \LaTeX\ does the right
+                                     thing and groups it
+                                     all together.''
+
+\vspace{6 pt}
+
+Observe that there is now a proper amount of space after ``\LaTeX''.
+(Note: using constructs like ``\verb*|\ \ \ \ |'' is usually not the 
+right way to leave some space in the middle of a line.  A much better way
+is to use something like ``\verb|dog\hspace{1 in}cat|'', which
+produces ``dog\hspace{1 in}cat'', keeping the dog exactly one inch
+from the cat.)
+                                     
+\LaTeX\ and \TeX\ were not designed to be WYSIWYG (What You See Is
+What You Get) systems, and with some experience using these systems
+most people realize that is a Good Thing.  But what if we had actually
+wanted to put a line-break in this text?  We can either use the
+line-break delimiter \verb|\\|, or put two carriage returns in the
+text, depending on exactly what we want.  Both \LaTeX\ and \TeX\ use
+the convention that two consecutive carriage returns (i.e., a blank
+line) denotes the start of a new paragraph.  Depending on the style of
+your document (such as the Acadia thesis style), the first line of a
+new paragraph may be indented, and there may be extra (vertical) space
+between the two paragraphs.  (And, in some styles which normally
+indent the first line of a paragraph, a paragraph immediately
+following a section heading is not indented.  If you want to know why
+this would be, talk to your local typographer.)
+
+For example, in:
+\begin{verbatim*}
+``We write text on 
+    multiple lines with\ \ \ \ \ random spacing      between
+    
+words, and \LaTeX\ does the right 
+                                     thing and groups it
+                                     all together.''
+\end{verbatim*}
+
+\noindent the blank line after ``between'' prompts the compiler
+to indent the next line beginning with ``words\dots'':
+
+\vspace{6 pt}
+
+``We write text on 
+    multiple lines with\ \ \ \ \ random spacing      between
+    
+words, and \LaTeX\ does the right 
+                                     thing and groups it
+                                     all together.''
+\vspace{6 pt}
+
+To indicate that you don't want to indent the first line of a new
+paragraph, use the \verb|\noindent| command to start the new paragraph:
+\begin{verbatim*}
+``We write text on 
+    multiple lines with\ \ \ \ \ random spacing      between
+    
+\noindent
+ words, and \LaTeX\ does the right 
+                                     thing and groups it
+                                     all together.''
+\end{verbatim*}
+
+\noindent becomes:
+
+\vspace{6 pt}
+
+``We write text on 
+    multiple lines with\ \ \ \ \ random spacing      between
+    
+\noindent
+ words, and \LaTeX\ does the right 
+                                     thing and groups it
+                                     all together.''
+
+\vspace{6 pt}
+
+Some people get confused about when to use a blank line and when to
+use \verb|\\|.  Simply, use a blank line if you are logically starting
+a new paragraph, and use \verb|\\| if you want to start a new line
+within the current paragraph.  Do NOT use \verb|\\| at the end of a
+paragraph to get extra space.  There are many ways to get extra
+vertical space; an example of one such command is
+``\verb|\vspace{0.5 in}|'' which terminates the current paragraph (if you
+give this command in the middle of a paragraph) and then puts out 0.5
+inches of vertical space.
+
+Having said that, there may be an unusual situation in which you want
+to start a new line in the middle of a paragraph, and in such cases
+you can use ``\verb|\\|''.  Also, when creating tables it is not
+uncommon to use ``\verb|\\|'' (see Chapter~\ref{chap:FIGURESANDTABLES}).
+
+
+                                     
+\section{Controlling automatic spacing and hyphenation}
+
+Sometimes you want to make sure that the spacing in your code is the
+spacing that is used during the actual typesetting.  For example, suppose
+we have a very long name that we don't want to be broken at the end of
+a line (hyphenated):
+
+``\dots\ the building blocks of life are often said to be the chemicals
+Deoxyribonucleic acid (DNA) and Ribonucleic acid (RNA), but actually
+amino acids are used to build DNA and RNA.'' 
+
+Let's say we want to ensure that no matter what happens,
+``Deoxyribonucleic acid (DNA)'' and ``Ribonucleic acid (RNA)'' are not
+split over lines.  To do this we use the non-breakable space
+``\verb|~|'' and a command to temporarily turn off hyphenation as follows:
+\begin{verbatim}``\dots\ the building blocks of life are often said 
+to be the chemicals {\hyphenchar\font=-1 Deoxyribonucleic~acid~(DNA)}
+and  {\hyphenchar\font=-1 Ribonucleic~acid~(RNA)}, but actually 
+amino acids are used to build DNA and RNA.''
+\end{verbatim}
+which produces
+
+\vspace{6 pt}
+``\dots\ the building blocks of life are often said to be 
+the chemicals {\hyphenchar\font=-1 Deoxyribonucleic~acid~(DNA)} and 
+{\hyphenchar\font=-1 Ribonucleic~acid~(RNA)}, but actually amino acids
+are used to build DNA and RNA.''
+ 
+\vspace{6 pt}
+Of course in this example the results are rather ugly because
+``\dots Deoxyribonucleic acid (DNA)\dots'' now hangs over the end of a
+line, but you get the point.  You might want to re-word your sentence
+(in the final version of your thesis) to avoid this problem.
