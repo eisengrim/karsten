@@ -2,4 +2,5 @@ plots/
 code/LagTracker/
 bathym/
 std_bathy/
+vel_interp/
 *.pyc
