@@ -4,16 +4,15 @@ import numpy as np
 import scipy as sp
 import sys, os
 import os.path as osp
-from datetime import datetime, timedelta
 
-PATH2SIM = "/EcoII/acadiau_uni/workspace/simulated/FVCOM/dngridCSR/drifter_runs/"
-LOC = ['GP', 'DG', 'PP']
+PATH2SIM = "/EcoII/acadia_uni/workspace/simulated/FVCOM/dngridCSR/drifter_runs/"
+LOC = ['GP']#,'DG','PP']
 #BF = ['0.015', '0.012', '0.009']
 BF = ['0.015']
 SAVEDIR = "/array/home/119865c/karsten/vel_interp/"
+ELEMS = "/array/home/119865c/karsten/nearest_elems/"
 
-
-if __name__ == 'main':
+if __name__ == '__main__':
 
     print 'locating all directories...'
     for bf in BF:
@@ -52,46 +51,67 @@ if __name__ == 'main':
         if 'GP' not in done and 'GP' in dir_name:
             done.append('GP')
             print '\tfinding nearest element indices for GP...'
-            ne_idx_gp = find_nearest_elems(trinodes, nnode)
+            fname = ELEMS + 'GP_ne_idx.dat'
+            ne_idx_gp = find_nearest_elems(trinodes, nnode, masked = False)
+            if not osp.exists(fname):
+                to_dump = np.ma.masked_invalid(np.asarray([np.append(\
+                        ne_idx_gp[i], [np.nan]*(7-len(ne_idx_gp[i]))) \
+                        for i in xrange(len(ne_idx_gp))]))
+                np.ma.dump(to_dump, fname)
+
         elif 'DG' not in done and 'DG' in dir_name:
             done.append('DG')
             print '\tfinding nearest element indices for DG...'
-            ne_idx_dg = find_nearest_elems(trinodes, nnode)
+            fname = ELEMS + 'DG_ne_idx.dat'
+            ne_idx_dg = find_nearest_elems(trinodes, nnode, masked = False)
+            if not osp.exists(fname):
+                to_dump = np.ma.masked_invalid(np.asarray([np.append( \
+                        ne_idx_dg[i], [np.nan]*(7-len(ne_idx_dg[i]))) \
+                        for i in xrange(len(ne_idx_dg[i]))]))
+                np.ma.dump(to_dump, fname)
+
         elif 'PP' not in done and 'PP' in dir_name:
             done.append('PP')
             print '\tfinding nearest element indices for PP...'
-            ne_idx_pp = find_nearest_elems(trinodes, nnode)
+            fname = ELEMS + 'PP_ne_idx.dat'
+            ne_idx_pp = find_nearest_elems(trinodes, nnode, masked = False)
+            if not osp.exists(fname):
+                to_dump = np.ma.masked_invalid(np.asarray([np.append( \
+                        ne_idx_pp[i], [np.nan]*(7-len(ne_idx_pp[i]))) \
+                        for i in xrange(len(ne_idx_pp[i]))]))
+                np.ma.dump(to_dump, fname)
 
         print '\tswapping axes...'
         # numpy is row major ordered - quicker to have elements as first dim
-        u=np.swapaxes(ncfile.Variables.u,0,1)
-        v=np.swapaxes(ncfile.Variables.v,0,1)
-        w=np.swapaxes(ncfile.Variables.w,0,1)
+        u=np.swapaxes(ncfile.Variables.u,0,2)
+        v=np.swapaxes(ncfile.Variables.v,0,2)
+        w=np.swapaxes(ncfile.Variables.w,0,2)
 
         print '\tinitializing empty array...'
-        varE = np.empty(len(nnode), dtype=object)
+        varE = np.empty(nnode, dtype=object)
 
+        print '\taveraging...'
         if 'DG' in dir_name:
-            for node in xrange(len(nnode)):
-                varE[i] = np.mean(u[ne_idx_dg,:,:], axis=0)
+            for node in xrange(nnode):
+                varE[node] = np.mean(u[ne_idx_dg[node],:,:], axis=0)
 
         elif 'GP' in dir_name:
-            for node in xrange(len(nnode)):
-                varE[i] = np.mean(u[ne_idx_gp,:,:], axis=0)
+            for node in xrange(nnode):
+                varE[node] = np.mean(u[ne_idx_gp[node],:,:], axis=0)
 
         elif 'PP' in dir_name:
-            for node in xrange(len(nnode)):
-                varE[i] = np.mean(u[ne_idx_pp,:,:], axis=0)
+            for node in xrange(nnode):
+                varE[node] = np.mean(u[ne_idx_pp[node],:,:], axis=0)
 
-        x = np.squeeze([np.vstack(varE[i]) for i in xrange(len(varEE))])
+        x = np.squeeze([np.vstack(varE[i]) for i in xrange(nnode)])
 
         print '\tcreating new subdirectory...'
-
         sim_name = dir_name[15:29]
         savepath = SAVEDIR + 'bfric_' + bf + '/' + loc + '_' + sim_name
         os.makedirs(savepath)
         savepath = savepath + loc + '_' + sim_name + '.mat'
 
+        print '\tsaving...'
         # benefit of saving in matlab: you don't need to know original shape
         # try in pickle, numpy.save or netcdf4??
         sp.io.savemat(savepath, mdict={'out': x}, oned_as='row')
