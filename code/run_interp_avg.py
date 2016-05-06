@@ -95,66 +95,60 @@ if __name__ == '__main__':
         vvarE = np.empty(nnode, dtype=object)
         wvarE = np.empty(nnode, dtype=object)
 
-        print '\taveraging...'
-        if 'DG' in dir_name:
-            for node in xrange(nnode):
-                uvarE[node] = np.mean(ncfile.Variables.u[ne_idx_dg[node],:,:], \
-                        axis=0)
-                vvarE[node] = np.mean(ncfile.Variables.v[ne_idx_dg[node],:,:], \
-                        axis=0)
-                wvarE[node] = np.mean(ncfile.Variables.w[ne_idx_dg[node],:,:], \
-                        axis=0)
-
-        elif 'GP' in dir_name:
-            for node in xrange(nnode):
-                uvarE[node] = np.mean(ncfile.Variables.u[ne_idx_gp[node],:,:], \
-                        axis=0)
-                vvarE[node] = np.mean(ncfile.Variables.v[ne_idx_gp[node],:,:], \
-                        axis=0)
-                wvarE[node] = np.mean(ncfile.Variables.w[ne_idx_gp[node],:,:], \
-                        axis=0)
-
-        elif 'PP' in dir_name:
-            for node in xrange(nnode):
-                uvarE[node] = np.mean(ncfile.Variables.u[ne_idx_pp[node],:,:], \
-                        axis=0)
-                vvarE[node] = np.mean(ncfile.Variables.v[ne_idx_pp[node],:,:], \
-                        axis=0)
-                wvarE[node] = np.mean(ncfile.Variables.w[ne_idx_pp[node],:,:], \
-                        axis=0)
-
-        # clear variables, save some space
-        del ncfile
-
-        uvarE = np.squeeze([np.vstack(uvarE[i]) for i in xrange(nnode)])
-        vvarE = np.squeeze([np.vstack(vvarE[i]) for i in xrange(nnode)])
-        wvarE = np.squeeze([np.vstack(wvarE[i]) for i in xrange(nnode)])
-
-        print '\trestoring axes...'
-        uvarE = np.swapaxes(uvarE, 0, 2)
-        vvarE = np.swapaxes(vvarE, 0, 2)
-        wvarE = np.swapaxes(wvarE, 0, 2)
-
-        print '\tsize of mean speed(s): {}'.format(uvarE.shape)
-
         print '\tcreating new subdirectory...'
         sim_name = dir_name[-43:-29]
-        print '\t\tfile will be placed in {}...'.format(sim_name)
-
+        print '\t\tfiles will be placed in {}...'.format(sim_name)
         savepath = SAVEDIR + 'bfric_' + bf + '/' + loc + '_' + sim_name
         os.makedirs(savepath)
         savepath = savepath + loc + '_' + sim_name
 
-        print '\tsaving pickle...'
+        if 'DG' in dir_name:
+            ne_idx = ne_idx_dg
+        elif 'GP' in dir_name:
+            ne_idx = ne_idx_gp
+        elif 'PP' in dir_name:
+            ne_idx = ne_idx_pp
+
+        print '\taveraging for u...'
+        for node in xrange(nnode):
+            uvarE[node] = np.mean(ncfile.Variables.u[ne_idx[node],:,:], axis=0)
+        uvarE = np.squeeze([np.vstack(uvarE[i]) for i in xrange(nnode)])
+        print '\t\trestoring axes...'
+        uvarE = np.swapaxes(uvarE, 0, 2)
+        print '\t\tsaving as pickle...'
+        uvarE.dump(savepath + '_u.pkl')
+        print '\tsize of mean speed(s): {}'.format(uvarE.shape)
+        del uvarE
+
+        print '\taveraging for v...'
+        for node in xrange(nnode):
+            vvarE[node] = np.mean(ncfile.Variables.v[ne_idx[node],:,:], axis=0)
+        vvarE = np.squeeze([np.vstack(vvarE[i]) for i in xrange(nnode)])
+        print '\t\trestoring axes...'
+        vvarE = np.swapaxes(vvarE, 0, 2)
+        print '\t\tsaving as pickle...'
+        vvarE.dump(savepath + '_v.pkl')
+        print '\t\tsize of mean speed(s): {}'.format(vvarE.shape)
+        del vvarE
+
+        for node in xrange(nnode):
+            wvarE[node] = np.mean(ncfile.Variables.w[ne_idx[node],:,:], axis=0)
+        wvarE = np.squeeze([np.vstack(wvarE[i]) for i in xrange(nnode)])
+        print '\t\trestoring axes...'
+        wvarE = np.swapaxes(wvarE, 0, 2)
+        print '\t\tsaving as pickle...'
+        wvarE.dump(savepath + '_w.pkl')
+        print '\t\tsize of mean speed(s): {}'.format(wvarE.shape)
+        del wvarE
+
+        # clear structure to save some space
+        del ncfile
+
         # benefit of saving in matlab: you don't need to know original shape
         # try in pickle, numpy.save or netcdf4??
         # sp.io.savemat(savepath + '_u.mat', mdict={'out': uvarE}, oned_as='row')
         # sp.io.savemat(savepath + '_v.mat', mdict={'out': vvarE}, oned_as='row')
         # sp.io.savemat(savepath + '_w.mat', mdict={'out': wvarE}, oned_as='row')
-
-        uvarE.dump(savepath + '_u.pkl')
-        vvarE.dump(savepath + '_v.pkl')
-        wvarE.dump(savepath + '_w.pkl')
 
         # save as netcdf
         # u = netcdf.netcdf_file(savepath + '_u.nc', 'w')
