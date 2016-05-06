@@ -4,6 +4,7 @@ from pyseidon import *
 from interpolation_utils import *
 import numpy as np
 import scipy as sp
+from scipy.io import netcdf
 import sys, os
 import os.path as osp
 
@@ -85,9 +86,9 @@ if __name__ == '__main__':
 
         print '\tswapping axes...'
         # numpy is row major ordered - quicker to have elements as first dim
-        u=np.swapaxes(ncfile.Variables.u,0,2)
-        v=np.swapaxes(ncfile.Variables.v,0,2)
-        w=np.swapaxes(ncfile.Variables.w,0,2)
+        ncfile.Variables.u = np.swapaxes(ncfile.Variables.u,0,2)
+        ncfile.Variables.v = np.swapaxes(ncfile.Variables.v,0,2)
+        ncfile.Variables.w = np.swapaxes(ncfile.Variables.w,0,2)
 
         print '\tinitializing empty arrays...'
         uvarE = np.empty(nnode, dtype=object)
@@ -97,50 +98,81 @@ if __name__ == '__main__':
         print '\taveraging...'
         if 'DG' in dir_name:
             for node in xrange(nnode):
-                uvarE[node] = np.mean(u[ne_idx_dg[node],:,:], axis=0)
-                vvarE[node] = np.mean(v[ne_idx_dg[node],:,:], axis=0)
-                wvarE[node] = np.mean(w[ne_idx_dg[node],:,:], axis=0)
+                uvarE[node] = np.mean(ncfile.Variables.u[ne_idx_dg[node],:,:], \
+                        axis=0)
+                vvarE[node] = np.mean(ncfile.Variables.v[ne_idx_dg[node],:,:], \
+                        axis=0)
+                wvarE[node] = np.mean(ncfile.Variables.w[ne_idx_dg[node],:,:], \
+                        axis=0)
 
         elif 'GP' in dir_name:
             for node in xrange(nnode):
-                uvarE[node] = np.mean(u[ne_idx_gp[node],:,:], axis=0)
-                vvarE[node] = np.mean(v[ne_idx_gp[node],:,:], axis=0)
-                wvarE[node] = np.mean(w[ne_idx_gp[node],:,:], axis=0)
+                uvarE[node] = np.mean(ncfile.Variables.u[ne_idx_gp[node],:,:], \
+                        axis=0)
+                vvarE[node] = np.mean(ncfile.Variables.v[ne_idx_gp[node],:,:], \
+                        axis=0)
+                wvarE[node] = np.mean(ncfile.Variables.w[ne_idx_gp[node],:,:], \
+                        axis=0)
 
         elif 'PP' in dir_name:
             for node in xrange(nnode):
-                uvarE[node] = np.mean(u[ne_idx_pp[node],:,:], axis=0)
-                vvarE[node] = np.mean(v[ne_idx_pp[node],:,:], axis=0)
-                wvarE[node] = np.mean(w[ne_idx_pp[node],:,:], axis=0)
+                uvarE[node] = np.mean(ncfile.Variables.u[ne_idx_pp[node],:,:], \
+                        axis=0)
+                vvarE[node] = np.mean(ncfile.Variables.v[ne_idx_pp[node],:,:], \
+                        axis=0)
+                wvarE[node] = np.mean(ncfile.Variables.w[ne_idx_pp[node],:,:], \
+                        axis=0)
 
-        x = np.squeeze([np.vstack(uvarE[i]) for i in xrange(nnode)])
-        y = np.squeeze([np.vstack(vvarE[i]) for i in xrange(nnode)])
-        z = np.squeeze([np.vstack(wvarE[i]) for i in xrange(nnode)])
+        # clear variables, save some space
+        del ncfile
+
+        uvarE = np.squeeze([np.vstack(uvarE[i]) for i in xrange(nnode)])
+        vvarE = np.squeeze([np.vstack(vvarE[i]) for i in xrange(nnode)])
+        wvarE = np.squeeze([np.vstack(wvarE[i]) for i in xrange(nnode)])
 
         print '\trestoring axes...'
-        x = np.swapaxes(x, 0, 2)
-        y = np.swapaxes(y, 0, 2)
-        z = np.swapaxes(z, 0, 2)
+        uvarE = np.swapaxes(uvarE, 0, 2)
+        vvarE = np.swapaxes(vvarE, 0, 2)
+        wvarE = np.swapaxes(wvarE, 0, 2)
 
-        print '\tsize of mean speed(s): {}'.format(x.shape)
+        print '\tsize of mean speed(s): {}'.format(uvarE.shape)
 
         print '\tcreating new subdirectory...'
-        sim_name = dir_name[15:29]
+        sim_name = dir_name[-29:-15]
+        print '\t\tfile will be placed in {}...'.format(sim_name)
+
         savepath = SAVEDIR + 'bfric_' + bf + '/' + loc + '_' + sim_name
         os.makedirs(savepath)
         savepath = savepath + loc + '_' + sim_name
 
-        print '\tsaving...'
+        print '\tsaving pickle...'
         # benefit of saving in matlab: you don't need to know original shape
         # try in pickle, numpy.save or netcdf4??
-        sp.io.savemat(savepath + '_u.mat', mdict={'out': x}, oned_as='row')
-        sp.io.savemat(savepath + '_v.mat', mdict={'out': y}, oned_as='row')
-        sp.io.savemat(savepath + '_w.mat', mdict={'out': z}, oned_as='row')
+        # sp.io.savemat(savepath + '_u.mat', mdict={'out': uvarE}, oned_as='row')
+        # sp.io.savemat(savepath + '_v.mat', mdict={'out': vvarE}, oned_as='row')
+        # sp.io.savemat(savepath + '_w.mat', mdict={'out': wvarE}, oned_as='row')
+
+        uvarE.dump(savepath + '_u.pkl')
+        vvarE.dump(savepath + '_v.pkl')
+        wvarE.dump(savepath + '_w.pkl')
+
+        # save as netcdf
+        # u = netcdf.netcdf_file(savepath + '_u.nc', 'w')
+        # u.history = 'BF/LOC/FILE//VEL: ' + bf + loc + sim_name + 'u'
+        # u.createDimension('u', len(
+
+        # v = netcdf.netcdf_file(savepath + '_v.nc', 'w')
+        # v.history = 'BF/LOC/FILE//VEL: ' + bf + loc + sim_name + 'v'
+        # w = netcdf.netcdf_file(savepath + '_w.nc', 'w')
+        # w.history = 'BF/LOC/FILE//VEL: ' + bf + loc + sim_name + 'w'
+
 
         # to load the data:
         #     > matdata = scipy.io.loadmat(savepath)
         # to check if data is unchanged
         #     > assert np.all(x == matdata['out'])
+        # or as a pickle, load with numpy.load or pickle.load...
+
 
         # var = interp_to_nodes_avg(ncfile.Variables.u, ncfile.Grid.nnode, \
         #        ncfile.Grid.trinodes)
