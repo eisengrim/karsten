@@ -138,7 +138,7 @@ if __name__ == '__main__':
         print '\tsize of mean speed(s): {}'.format(uvarE.shape)
 
         print '\tcreating new subdirectory...'
-        sim_name = dir_name[-29:-15]
+        sim_name = dir_name[-43:-29]
         print '\t\tfile will be placed in {}...'.format(sim_name)
 
         savepath = SAVEDIR + 'bfric_' + bf + '/' + loc + '_' + sim_name
