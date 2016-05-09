@@ -96,8 +96,8 @@ if __name__ == '__main__':
             vvarE = np.empty(nnode, dtype=object)
             wvarE = np.empty(nnode, dtype=object)
 
-            savepath = SAVEDIR + 'bfric_' + bf + '/' + loc + '_' + sim_name + '/'
             sim_name = dir_name[-43:-29]
+            savepath = SAVEDIR + 'bfric_' + bf + '/' + loc + '_' + sim_name + '/'
 
             if osp.exists(savepath):
                 print '\tskipping {}...'.format(sim_name)
