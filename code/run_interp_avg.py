@@ -9,7 +9,7 @@ import sys, os
 import os.path as osp
 
 PATH2SIM = "/EcoII/acadia_uni/workspace/simulated/FVCOM/dngridCSR/drifter_runs/"
-LOC = 'GP'
+LOC = 'DG'
 #LOC=['GP','DG','PP']
 #BF = ['0.015', '0.012', '0.009']
 BF = '0.015'
@@ -72,7 +72,7 @@ if __name__ == '__main__':
             if not osp.exists(fname):
                 to_dump = np.ma.masked_invalid(np.asarray([np.append( \
                          ne_idx_dg[i], [np.nan]*(7-len(ne_idx_dg[i]))) \
-                         for i in xrange(len(ne_idx_dg[i]))]))
+                         for i in xrange(len(ne_idx_dg))]))
                 np.ma.dump(to_dump, fname)
 
         elif 'PP' not in done and 'PP' in dir_name:
@@ -83,7 +83,7 @@ if __name__ == '__main__':
             if not osp.exists(fname):
                 to_dump = np.ma.masked_invalid(np.asarray([np.append( \
                         ne_idx_pp[i], [np.nan]*(7-len(ne_idx_pp[i]))) \
-                        for i in xrange(len(ne_idx_pp[i]))]))
+                        for i in xrange(len(ne_idx_pp))]))
                 np.ma.dump(to_dump, fname)
 
         print '\tswapping axes...'
