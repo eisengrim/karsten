@@ -9,7 +9,7 @@ import sys, os
 import os.path as osp
 
 PATH2SIM = "/EcoII/acadia_uni/workspace/simulated/FVCOM/dngridCSR/drifter_runs/"
-LOC = 'DG'
+LOC = 'PP'
 #LOC=['GP','DG','PP']
 #BF = ['0.015', '0.012', '0.009']
 BF = '0.015'
