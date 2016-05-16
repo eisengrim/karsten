@@ -63,6 +63,7 @@ def findStartConditions(ncfile, files, odir):
     print '{} drifters will be analysed...'.format(len(files))
 
     data_count = 0
+    names= []
     lon0 = []
     lat0 = []
     mtime0 = []
@@ -82,8 +83,9 @@ def findStartConditions(ncfile, files, odir):
                     drift.Variables.matlabTime[0]))))
         laststep.append(int(np.argmin(np.abs(ncfile.Variables.matlabTime - \
                     drift.Variables.matlabTime[-1]))))
+        names.append(fname)
 
-    return lon0, lat0, mtime0, firststep, laststep
+    return names, lon0, lat0, mtime0, firststep, laststep
 
 
 if __name__ == '__main__':
@@ -122,24 +124,25 @@ if __name__ == '__main__':
     if not files:
         sys.exit('drifters given are not within model runtime window.')
 
-    lon0, lat0, mtime0, first, last = findStartConditions(ncfile, files, obs_dir)
+    nom, lon0, lat0, mtime0, first, last = findStartConditions(ncfile, \
+                files, obs_dir)
 
     # write init loc data to text file
     print 'recording initial positions...'
 
     outname = loc + '_' + sim_name
-    if not osp.exists(outname):
-        os.makedirs(outname)
 
-    with open(outname+'/init_locs_'+outname+'.dat', 'w') as f:
-        for lon, lat in zip(lon0, lat0):
-            f.write(str(lon) + ' ' + str(lat) + '\n')
+    print len(nom), len(lon0), len(first)
 
-    with open(outname+'/init_time_steps_'+outname+'.dat', 'w') as f:
-        for idx1, idx2 in zip(first, last):
-            f.write(str(idx1) + ' ' + str(idx2) + '\n')
+    with open('init_locs_'+outname+'.dat', 'w') as f:
+        for name, lon, lat in zip(nom, lon0, lat0):
+            f.write(str(name) + ' ' + str(lon) + ' ' + str(lat) + '\n')
 
-    np.savetxt(outname+'/pyticle_info_'+outname+'.txt', \
-                np.column_stack((lon0,lat0,first,last)), fmt='%s')
+    with open('init_time_steps_'+outname+'.dat', 'w') as f:
+        for name, idx1, idx2 in zip(nom, first, last):
+            f.write(str(name) + ' ' + str(idx1) + ' ' + str(idx2) + '\n')
+
+    np.savetxt('pyticle_info_'+outname+'.txt', \
+                np.column_stack((nom, lon0,lat0,first,last)), fmt='%s')
 
     print '...all done!'
