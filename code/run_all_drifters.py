@@ -1,7 +1,15 @@
 #! /usr/env/python2.7
 
 """
-usage: python run_all_drifters.py [-plot, -save, -stats]
+Creates plots and computes stats for pyticle tracker output.
+
+usage: python run_all_drifters.py [-p,-st] [-s] [-ow]
+
+cmd line args:
+    -p :: plot
+    -st :: compute stats
+    -s :: save plots
+    -ow :: overwrite current plots
 """
 
 
@@ -22,12 +30,12 @@ from matplotlib import rc
 from datetime import datetime, timedelta
 from pyseidon import *
 
-LOC = ['PP', 'GP', 'DG']
+LOC = ['DG', 'GP', 'PP']
 BFRIC = '0.015'
 SIM = ['2014_Aug_12_3D', '2013_Aug_08_3D', '2013_Aug_01_3D', '2012_Jun_05_3D', \
        '2012_Jul_05_3D', '2013_Oct_10_3D', '2013_Nov_05_3D', '2013_Nov_06_3D']
-PATH2OUT = '/array/home/119865c/karsten/plots/pytrkr/'
 
+PATH2OUT = '/array/home/119865c/karsten/plots/pytrkr/'
 PATH2SIM = '/EcoII/acadia_uni/workspace/simulated/FVCOM/dngridCSR/' + \
                         'drifter_runs/BFRIC_'
 OUTPATH = '/array/home/119865c/karsten/pytrkr/'
@@ -176,66 +184,67 @@ if __name__ == '__main__':
             indata=np.genfromtxt(start_info, dtype=None)
             print(indata.shape)
 
+            # set centre of location
+            if loc == 'GP':
+                centre = [-66.33906, 44.26898]
+            elif loc == 'DG':
+                centre = [-65.76000, 44.67751]
+            elif loc == 'PP':
+                centre = [-65.206924, 44.389368]
+            else:
+                sys.exit('location tag not recognized.')
+
+            if not osp.exists(filename) or not osp.isfile(filename):
+                sys.exit('simulation path not found / valid.')
+
+            # open the FVCOM file
+            print 'opening fvcom file...'
+            ncfile = FVCOM(filename, debug=False)
+            print 'calculating ebb/flood split at centre of location...'
+            fI, eI, _, _ = ncfile.Util2D.ebb_flood_split_at_point(centre[0], \
+                            centre[1])
+            print 'calculating model velocity norm...'
+            ncfile.Util3D.velo_norm()
+
+            # set seaborn sns font
+            sns.set(font="serif")
+            # activate latex text rendering
+            # rc('text', usetex=True)
+
+            if bfric not in ['0.015', '0.012', '0.009']:
+                sys.exit('bottom friction tag not valid.')
+
             for row in indata:
                 drifter = path2drift+row[0]
                 inloc = [row[1], row[2]]
                 savedir = outpath + row[0][:-4] + '_output.nc'
 
-                # set options of drifters
-                # note: interpolation ratio is how many timesteps per timestep to
-                # linearly interpolate nc data
-                # output ratio is how often to output particle potision
-                options={}
-                options['starttime']=row[3]
-                options['endtime']=row[4]
-                options['interpolationratio']=60
-                options['outputratio']=2
-                options['ncformat']='NETCDF4_CLASSIC'
-                options['useLL']=True
-                options['layer']=0
-                options['gridDim']='2D'
-                options['projstr']='lcc +lon_0=-64.55880 +lat_0=41.78504 '+ \
+                # if the run exists, skip it
+                if not osp.exists(savedir):
+                    # set options of drifters
+                    # note: interpolation ratio is how many timesteps per
+                    # model timestep to linearly interpolate nc data
+                    # output ratio is how often to output particle potision
+                    options={}
+                    options['starttime']=row[3]
+                    options['endtime']=row[4]
+                    options['interpolationratio']=60
+                    options['outputratio']=2
+                    options['ncformat']='NETCDF4_CLASSIC'
+                    options['useLL']=True
+                    options['layer']=0
+                    options['gridDim']='2D'
+                    options['projstr']='lcc +lon_0=-64.55880 +lat_0=41.78504 '+ \
                                    '+lat_1=39.69152 +lat_2=43.87856'
 
-                # run mitchell's particle tracker
-                start = time.clock()
-                mypy=pyticle(filename, inloc, savedir, options=options)
-                mypy.run()
-                print('run in: %f' % (time.clock() - start))
+                    # run mitchell's particle tracker
+                    start = time.clock()
+                    mypy=pyticle(filename, inloc, savedir, options=options)
+                    mypy.run()
+                    print('run in: %f' % (time.clock() - start))
 
-                # plotting
+                # open pytkl structure
                 pytkl = nc.Dataset(savedir, 'r', format='NETCDF4_CLASSIC')
-
-                # set seaborn sns font
-                sns.set(font="serif")
-                # activate latex text rendering
-                # rc('text', usetex=True)
-
-                if loc == 'GP':
-                    centre = [-66.33906, 44.26898]
-                elif loc == 'DG':
-                    centre = [-65.76000, 44.67751]
-                elif loc == 'PP':
-                    centre = [-65.206924, 44.389368]
-                else:
-                    sys.exit('location tag not recognized.')
-
-                if bfric not in ['0.015', '0.012', '0.009']:
-                    sys.exit('bottom friction tag not valid.')
-
-                if not osp.exists(filename) or not osp.isfile(filename):
-                    sys.exit('simulation path not found / valid.')
-
-                # open the FVCOM file
-                print 'opening fvcom file...'
-                ncfile = FVCOM(filename, debug=False)
-                print 'calculating ebb/flood split at centre of location...'
-                fI, eI, _, _ = ncfile.Util2D.ebb_flood_split_at_point(centre[0], \
-                                centre[1])
-                print 'calculating model velocity norm...'
-                ncfile.Util3D.velo_norm()
-
-                # for now, drifter = false. add this later
 
                 print 'creating time window...'
                 # this is in julian time
@@ -250,35 +259,56 @@ if __name__ == '__main__':
                 print 'opening drifter file...'
                 drift = Drifter(path2drift+row[0], debug=False)
 
-                print 'preparing to create color map...'
-                fig = createColorMap(ncfile, tideNorm[0,:], mesh=False, \
-                        title = 'Pyticle Track for ' + row[0])
+                # do things based on command line args
+                if str(sys.argv[1]) == '-p':
+                    # check whether or not to overwrite
+                    savename = row[0][:-4] + '_plot.png'
+                    saveplot = PATH2OUT + loc + '_' + sim + '/'
+                    if len(sys.argv) > 2:
+                        if str(sys.argv[2]) == '-s':
+                            save = True
+                        if len(sys.argv) > 3:
+                            if str(sys.argv[3]) == '-ow':
+                                ow = True
+                        else:
+                            ow = False
+                    else:
+                        save = False
+                        ow = False
 
-                # add scatter plots of data
-                lonD = drift.Variables.lon
-                latD = drift.Variables.lat
-                drift_path = plt.scatter(lonD, latD, c='m', lw=0, s=25)
+                    if save and not ow:
+                        if osp.exists(saveplot+savename):
+                            continue
 
-                lon = pytkl.variables['lon'][:]
-                lat = pytkl.variables['lat'][:]
-                print 'adding scatter plot...'
-                pytkl_path = plt.scatter(lon, lat, c='k', lw=0, alpha=0.6, \
+                    print 'preparing to create color map...'
+                    fig = createColorMap(ncfile, tideNorm[0,:], mesh=False, \
+                            title = 'Pyticle Track for ' + row[0])
+
+                    # add scatter plots of data
+                    lonD = drift.Variables.lon
+                    latD = drift.Variables.lat
+                    drift_path = plt.scatter(lonD, latD, c='m', lw=0, s=25)
+
+                    lon = pytkl.variables['lon'][:]
+                    lat = pytkl.variables['lat'][:]
+                    print 'adding scatter plot...'
+                    pytkl_path = plt.scatter(lon, lat, c='k', lw=0, alpha=0.6, \
                         marker="^", s=25)
 
-                plt.legend([drift_path, pytkl_path],
+                    plt.legend([drift_path, pytkl_path],
                            ['Drifter', 'Model'])
 
-                if str(sys.argv[1]) == '-plot':
-                    plt.show()
+                    if str(sys.argv[2]) == '-s':
+                        print 'creating save directory...'
+                        if not osp.exists(saveplot):
+                            os.makedirs(saveplot)
 
-                if str(sys.argv[1]) == '-save':
-                    savename = row[0][:-3] + '_plot.png'
-                    print 'creating save directory...'
-                    saveplot = PATH2OUT + loc + '_' + sim + '/'
-                    if not osp.exists(saveplot):
-                        os.makedirs(saveplot)
+                        plt.savefig(saveplot + savename)
 
-                    plt.savefig(saveplot + savename)
+                    else:
+                        plt.show()
 
-                if str(sys.argv[1]) == '-stats':
+                    plt.close(fig)
+
+                if str(sys.argv[1]) == '-st':
                     pass
