@@ -9,11 +9,11 @@ import sys, os
 import os.path as osp
 
 PATH2SIM = "/EcoII/acadia_uni/workspace/simulated/FVCOM/dngridCSR/drifter_runs/"
-LOC = 'PP'
+LOC = 'GP'
 #LOC=['GP','DG','PP']
 #BF = ['0.015', '0.012', '0.009']
 BF = '0.015'
-SAVEDIR = "/array/home/119865c/karsten/vel_interp/"
+SAVEDIR = "/EcoII/acadiau_uni/swansea/vel_interp/"
 ELEMS = "/array/home/119865c/karsten/nearest_elems/"
 
 if __name__ == '__main__':

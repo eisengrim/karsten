@@ -17,7 +17,7 @@ import sys, os
 import os.path as osp
 
 PATH2SIM='/EcoII/acadia_uni/workspace/simulated/FVCOM/dngridCSR/drifter_runs/'
-PATH2VEL='/array/home/119865c/karsten/swansea/vel_interp/bfric_'
+PATH2VEL='/EcoII/acadia_uni/swansea/vel_interp/bfric_'
 
 
 if __name__ == '__main__':
