@@ -35,7 +35,7 @@ BFRIC = '0.015'
 SIM = ['2014_Aug_12_3D', '2013_Aug_08_3D', '2013_Aug_01_3D', '2012_Jun_05_3D', \
        '2012_Jul_05_3D', '2013_Oct_10_3D', '2013_Nov_05_3D', '2013_Nov_06_3D']
 
-PATH2OUT = '/array/home/119865c/karsten/plots/pytrkr/'
+PATH2OUT = '/EcoII/acadia_uni/projects/drifters/plots/pytrkr/'
 PATH2SIM = '/EcoII/acadia_uni/workspace/simulated/FVCOM/dngridCSR/' + \
                         'drifter_runs/BFRIC_'
 OUTPATH = '/array/home/119865c/karsten/pytrkr/'

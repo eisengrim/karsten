@@ -60,7 +60,7 @@ path_model='/EcoII/acadia_uni/workspace/simulated/FVCOM/dngridCSR/drifter_runs/'
 file_model_nc='BFRIC_0.015/GP/2013_Aug_08_3D/output/subdomain_GP1_0001.nc'
 
 #### Output File ####
-path_output='/array/home/119865c/karsten/std_bathy/'
+path_output='/EcoII/acadia_uni/projects/drifters/std_bathy/'
 output_file='GP_stdbathy_triArea_dngridCSR_bounded.p'
 
 #### Bounding Box ####

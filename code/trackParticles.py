@@ -19,7 +19,7 @@ from pyseidon import *
 
 PATH2SIM="/EcoII/acadia_uni/workspace/simulated/FVCOM/dngridCSR/drifter_runs/"
 PATH2OBS="/EcoII/acadia_uni/workspace/observed/"
-PATH2OUT="/array/home/119865c/karsten/plots/pytrkr/"
+PATH2OUT="/EcoII/acadia_uni/projects/drifters/plots/pytrkr/"
 
 
 def dn2dt(datenum):

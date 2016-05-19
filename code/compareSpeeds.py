@@ -48,7 +48,7 @@ from pyseidon import *
 
 PATH_TO_SIM="/EcoII/acadia_uni/workspace/simulated/FVCOM/dngridCSR/drifter_runs/"
 PATH_TO_OBS="/EcoII/acadia_uni/workspace/observed/"
-SAVEPATH="/array/home/119865c/karsten/plots/"
+SAVEPATH="/EcoII/acadia_uni/projects/drifters/plots/"
 GRID='dngridCSR'
 
 def dn2dt(datenum, debug=False):

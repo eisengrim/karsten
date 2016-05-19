@@ -13,7 +13,7 @@ LOC = 'GP'
 #LOC=['GP','DG','PP']
 #BF = ['0.015', '0.012', '0.009']
 BF = '0.015'
-SAVEDIR = "/EcoII/acadiau_uni/swansea/vel_interp/"
+SAVEDIR = "/EcoII/acadia_uni/projects/drifters/swansea/vel_interp/"
 ELEMS = "/array/home/119865c/karsten/nearest_elems/"
 
 if __name__ == '__main__':

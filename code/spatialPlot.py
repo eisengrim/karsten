@@ -16,7 +16,7 @@ PATH_TO_SIM_FILE="/EcoII/acadia_uni/workspace/simulated/FVCOM/dngridCSR/" \
    + "drifter_runs/BFRIC_0.015/GP/2013_Aug_08_3D/output/subdomain_GP1_0001.nc"
 PATH_TO_OBS_DIR="/EcoII/acadia_uni/workspace/observed/GP/Drifter/"
 LOCATION = "GP"
-SAVEPATH='/array/home/119865c/karsten/data/plots/'
+SAVEPATH='/EcoII/acadia_uni/projects/drifters/plots/'
 
 """
 The program plots drifter trajectories taken from a drifter class onto a
