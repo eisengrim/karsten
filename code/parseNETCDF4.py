@@ -18,14 +18,14 @@ import os.path as osp
 
 PATH2SIM='/EcoII/acadia_uni/workspace/simulated/FVCOM/dngridCSR/drifter_runs/'
 PATH2VEL='/EcoII/acadia_uni/swansea/vel_interp/bfric_'
-
+PATH2OUT='/EcoII/acadia_uni/swansea/meshes/'
 
 if __name__ == '__main__':
 
     loc = sys.argv[1]
     sim = sys.argv[3]
     bfric = str(sys.argv[2])
-    outpath = sys.argv[4]
+    outname = str(sys.argv[4])
 
     if loc not in ['GP', 'PP', 'DG']:
         sys.exit('not a valid location tag.')
@@ -36,6 +36,7 @@ if __name__ == '__main__':
     filename = PATH2SIM+'BFRIC_'+bfric+'/'+loc+'/'+sim+ \
                 '/output/subdomain_'+loc+'1_0001.nc'
     dir_vel = PATH2VEL+bfric+'/'+mesh+'/'
+    outpath = PATH2OUT + mesh + '/' + mesh + '_output/'
 
     # loading netcdf file
     if not filename.endswith('.nc'):
