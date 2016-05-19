@@ -3,6 +3,8 @@
 """
 Parses netCDF4 data from FVCOM in a similar manner to tawe-telemac-utils.
 
+Use the full path for the pathway to the out directory.
+
 usage: python netCDF4.py loc bfric sim path/to/out/dir/
 """
 
@@ -15,14 +17,14 @@ import sys, os
 import os.path as osp
 
 PATH2SIM='/EcoII/acadia_uni/workspace/simulated/FVCOM/dngridCSR/drifter_runs/'
-PATH2VEL='/home/array/119865c/karsten/swansea/vel_interp/bfric_'
+PATH2VEL='/array/home/119865c/karsten/swansea/vel_interp/bfric_'
 
 
 if __name__ == '__main__':
 
     loc = sys.argv[1]
     sim = sys.argv[3]
-    bfric = sys.argv[2]
+    bfric = str(sys.argv[2])
     outpath = sys.argv[4]
 
     if loc not in ['GP', 'PP', 'DG']:
@@ -92,9 +94,9 @@ if __name__ == '__main__':
 
     print 'loading velocity files...'
     # deal with velocities
-    u = np.load(dir_vels+'_u.pkl', mmap_mode = 'r')
-    v = np.load(dir_vels+'_v.pkl', mmap_mode = 'r')
-    w = np.load(dir_vels+'_w.pkl', mmap_mode = 'r')
+    u = np.load(dir_vel+mesh+'_u.pkl', mmap_mode = 'r')
+    v = np.load(dir_vel+mesh+'_v.pkl', mmap_mode = 'r')
+    w = np.load(dir_vel+mesh+'_w.pkl', mmap_mode = 'r')
 
     # flatten velocity arrays in all but time dim
     u = u.reshape(u.shape[0], -1).astype(object)
@@ -126,51 +128,63 @@ if __name__ == '__main__':
         os.makedirs(outpath)
 
     if outpath[-1] != '/':
-        outpath.append('/')
+        outpath += '/'
 
     outfile = outpath+mesh
 
-    np.savetxt(outfile + '.x.txt', np.vstack((nodes, x)).T, header=str(npoin), \
-               delimiter='\t')
-    np.savetxt(outfile + '.y.txt', np.vstack((nodes, y)).T, header=str(npoin), \
-               delimiter='\t')
-    np.savetxt(outfile + '.conn.txt', np.vstack((elems, nv)).T, delimiter='\t', \
-               header='{}\t{}'.format(nelem, ndp))
-    np.savetxt(outfile + '.times.txt', times, delimiter='\t'. header=str(nt))
+    # numpy.savetxt write bytes to file, which doesn't work with the file open
+    # in text mode. Work around this by opening in binary mode and writing
+    # the header in bytes
+    with open(outfile + '.x.txt', 'wb') as f:
+        f.write(b'{}\n'.format(npoin))
+        np.savetxt(f, np.vstack((nodes, x)).T, fmt='%i\t%f')
+
+    with open(outfile + '.y.txt', 'wb') as f:
+        f.write(b'{}\n'.format(npoin))
+        np.savetxt(f, np.vstack((nodes, y)).T, fmt='%i\t%f')
+
+    with open(outfile + '.conn.txt', 'wb') as f:
+        f.write(b'{}\t{}\n'.format(nelem, ndp))
+        np.savetxt(f, np.vstack((elems, nv)).T, fmt='%i\t%i')
+
+    with open(outfile + '.times.txt', 'wb') as f:
+        f.write(b'{}\t'.format(nt))
+        np.savetxt(f, times, fmt='%i\t%f')
 
     with open(outfile + '.vars.txt', 'w') as f:
-        out_str='{}\n{}\t{}\n{}\t{}\n{}\t{}\n{}\t{}'\
+        out_str = '{}\n{}\t{}\n{}\t{}\n{}\t{}\n{}\t{}'\
                 .format(nvars, 0, var0, 1, var1, 2, var2, 3, var3)
         f.write(out_str)
 
-    for t in np.xrange(nt):
-        np.savetxt(outfile+.'var0.t'+str(t)+'.txt', np.vstack((nodes, z[t])).T, \
-                   delimiter = '\t')
-        np.savetxt(outfile+.'var1.t'+str(t)+'.txt', np.vstack((nodes, u[t])).T, \
-                   delimiter = '\t')
-        np.savetxt(outfile+.'var2.t'+str(t)+'.txt', np.vstack((nodes, v[t])).T, \
-                   delimiter = '\t')
-        np.savetxt(outfile+.'var3.t'+str(t)+'.txt', np.vstack((nodes, w[t])).T, \
-                   delimiter = '\t')
+    print 'writing velocities...'
+    for t in xrange(nt):
+        np.savetxt(outfile+'.var0.t'+str(t)+'.txt', np.vstack((nodes, z[t])).T, \
+                   fmt='%i\t%f')
+        np.savetxt(outfile+'.var1.t'+str(t)+'.txt', np.vstack((nodes, u[t])).T, \
+                   fmt='%i\t%f')
+        np.savetxt(outfile+'.var2.t'+str(t)+'.txt', np.vstack((nodes, v[t])).T, \
+                   fmt='%i\t%f')
+        np.savetxt(outfile+'.var3.t'+str(t)+'.txt', np.vstack((nodes, w[t])).T, \
+                   fmt='%i\t%f')
 
     print 'creating .ini file...'
     with open(outfile + '.ini', 'w') as f:
         to_write = """[paths]
-        basename = %s
-        output = %s
+basename = %s
+output = %s
 
-        [settings]
-        dimensions = 3
-        particle_steps = 1
+[settings]
+dimensions = 3
+particle_steps = 1
 
-        [indexes]
-        fish = 0
-        noise = 0
-        z = 0
-        u = 1
-        v = 2
-        w = 3
-        """
+[indexes]
+fish = 0
+noise = 0
+z = 0
+u = 1
+v = 2
+w = 3
+"""
 
         f.write(to_write % (outfile, outfile + '_output/'))
 
