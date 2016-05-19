@@ -3,9 +3,7 @@
 """
 Parses netCDF4 data from FVCOM in a similar manner to tawe-telemac-utils.
 
-Use the full path for the pathway to the out directory.
-
-usage: python netCDF4.py loc bfric sim path/to/out/dir/
+usage: python netCDF4.py loc bfric sim name_of_out_dir/
 """
 
 from __future__ import division
