@@ -3,13 +3,18 @@
 """
 Creates plots and computes stats for pyticle tracker output.
 
-usage: python run_all_drifters.py [-p,-st] [-s] [-ow]
+usage: python run_all_drifters.py [-p -a -s -w] -r N -n N
 
 cmd line args:
     -p :: plot
-    -st :: compute stats
+    -a :: compute stats
     -s :: save plots
-    -ow :: overwrite current plots
+    -w :: overwrite current plots
+    -b :: select a bottom friction
+    -l :: select a location
+    -d :: select a simulation date
+    -n :: number of particles (int)
+    -r :: radius of initialisation (float)
 """
 
 
@@ -29,6 +34,7 @@ import matplotlib.tri as Tri
 from matplotlib import rc
 from datetime import datetime, timedelta
 from pyseidon import *
+import argparse as arp
 
 LOC = ['DG', 'GP', 'PP']
 BFRIC = '0.015'
@@ -38,10 +44,40 @@ SIM = ['2014_Aug_12_3D', '2013_Aug_08_3D', '2013_Aug_01_3D', '2012_Jun_05_3D', \
 PATH2OUT = '/EcoII/acadia_uni/projects/drifters/plots/pytrkr/'
 PATH2SIM = '/EcoII/acadia_uni/workspace/simulated/FVCOM/dngridCSR/' + \
                         'drifter_runs/BFRIC_'
-OUTPATH = '/array/home/119865c/karsten/pytrkr/'
-PATH2INIT = '/array/home/119865c/karsten/drifters/start_info/' + \
-                   'pyticle_info_'
+OUTPATH = '/EcoII/acadia_uni/projects/drifters/pyticle_tracker/'
+PATH2INIT = '/array/home/119865c/karsten/drifters/start_info/'
 PATH2OBS = '/EcoII/acadia_uni/workspace/observed/'
+
+
+def parseArgs():
+    """
+    Parses command line args.
+    """
+
+    parser = arp.ArgumentParser(prog='run_all_drifters.py')
+
+    parser.add_argument('-p', action='store_true', help='generate plots.')
+    parser.add_argument('-s', action='store_true', help='save plots.')
+    parser.add_argument('-a', action='store_true', help='run analysis.')
+    parser.add_argument('-w', action='store_true', help='overwrite plots.')
+    parser.add_argument('-b', nargs=1, choices=('0.009','0.012','0.015'), \
+            help='select a bottom friction.', default='0.015', type=str)
+    parser.add_argument('-l', nargs='*', choices=LOC, \
+            help='select a location tag.')
+    parser.add_argument('-d', nargs='*', choices=SIM,\
+            metavar='YYYY_Mmm_DD_3D', help='select a simulation date.')
+    multiple = parser.add_argument_group('multiple pyticle options')
+    multiple.add_argument('-r', nargs=1, type=float, metavar='#', \
+            help='define an initial radius in degrees.')
+    multiple.add_argument('-n', type=int, metavar='#', nargs=1, \
+            help='define a number of particles.')
+    # parser.add_argument('-sd', nargs=1, metavar='#', type=float,\
+    #         help='adds random noise as std. dev. to pyticle velocities.')
+    parser._optionals.title = 'optional flag arguments'
+
+    args = parser.parse_args()
+
+    return args
 
 
 def dn2dt(datenum):
@@ -158,31 +194,51 @@ def createColorMap(model, var, title='', mesh=True, bounds=[], debug=True):
     return fig
 
 
-
 if __name__ == '__main__':
 
-    bfric = BFRIC
+    # set cmd line options
+    print 'parsing command line options...'
+    args = parseArgs()
+
+    if args.l:
+        LOC = args.l
+    if args.d:
+        SIM = args.d
+
+    if args.b:
+        bfric = args.b
+    else:
+        bfric = BFRIC
 
     for loc in LOC:
         for sim in SIM:
 
             filename = PATH2SIM + bfric + '/' + loc + '/' + sim + \
                         '/output/subdomain_' + loc + '1_0001.nc'
-            start_info = PATH2INIT + loc + '_' + sim + '.txt'
+            start_info = PATH2INIT + 'pyticle_info_' + loc + '_' + sim + '.txt'
             path2drift = PATH2OBS + loc + '/Drifter/'
             outpath = OUTPATH
 
+            print 'looking for ncfile...'
             if not osp.exists(filename):
                 continue
 
             # define output path
-            outpath = outpath + loc + '_' + sim + '/'
+            outpath = outpath + loc + '_' + sim
+
+            if args.n:
+                outpath = outpath + '_n{}'.format(args.n[0])
+            if args.r:
+                outpath = outpath + '_r{}'.format(args.r[0])
+
+            outpath += '/'
+
             if not osp.exists(outpath):
                 os.makedirs(outpath)
 
             # get starting locations and timesteps of drifters
             indata=np.genfromtxt(start_info, dtype=None)
-            print(indata.shape)
+            print str(indata.shape[0]) + ' drifters...'
 
             # set centre of location
             if loc == 'GP':
@@ -215,9 +271,29 @@ if __name__ == '__main__':
                 sys.exit('bottom friction tag not valid.')
 
             for row in indata:
-                drifter = path2drift+row[0]
+                drifter = path2drift + row[0]
                 inloc = [row[1], row[2]]
+                inlocs = inloc
                 savedir = outpath + row[0][:-4] + '_output.nc'
+
+                # added radius and number of particles
+                if args.n:
+                    num = args.n[0]
+                    inlocs = np.tile(inloc, (num, 1))
+                    print 'starting with {} particles...'.format(num)
+                else:
+                    num = 1
+
+                if args.r:
+                    # 1 deg lat = 110575 m
+                    # 1 deg lon = 111303 m
+                    inlocs = np.vstack((np.random.uniform( \
+                            inloc[0]-args.r[0]/111303.0, \
+                            inloc[0]+args.r[0]/111303.0, num), \
+                            np.random.uniform(inloc[1]-args.r[0]/110575.0, \
+                                              inloc[1]+args.r[0]/110575.0, \
+                                              num))).T
+                    print 'randomizing starting locations...'
 
                 # if the run exists, skip it
                 if not osp.exists(savedir):
@@ -239,7 +315,7 @@ if __name__ == '__main__':
 
                     # run mitchell's particle tracker
                     start = time.clock()
-                    mypy=pyticle(filename, inloc, savedir, options=options)
+                    mypy=pyticle(filename, inlocs, savedir, options=options)
                     mypy.run()
                     print('run in: %f' % (time.clock() - start))
 
@@ -260,16 +336,14 @@ if __name__ == '__main__':
                 drift = Drifter(path2drift+row[0], debug=False)
 
                 # do things based on command line args
-                if str(sys.argv[1]) == '-p':
+                if args.p:
                     # check whether or not to overwrite
                     savename = row[0][:-4] + '_plot.png'
                     saveplot = PATH2OUT + loc + '_' + sim + '/'
-                    if len(sys.argv) > 2:
-                        if str(sys.argv[2]) == '-s':
-                            save = True
-                        if len(sys.argv) > 3:
-                            if str(sys.argv[3]) == '-ow':
-                                ow = True
+                    if args.s:
+                        save = True
+                        if args.w:
+                            ow = True
                         else:
                             ow = False
                     else:
@@ -285,20 +359,20 @@ if __name__ == '__main__':
                             title = 'Pyticle Track for ' + row[0])
 
                     # add scatter plots of data
-                    lonD = drift.Variables.lon
-                    latD = drift.Variables.lat
-                    drift_path = plt.scatter(lonD, latD, c='m', lw=0, s=25)
-
                     lon = pytkl.variables['lon'][:]
                     lat = pytkl.variables['lat'][:]
                     print 'adding scatter plot...'
-                    pytkl_path = plt.scatter(lon, lat, c='k', lw=0, alpha=0.6, \
+                    pytkl_path = plt.scatter(lon, lat, c='m', lw=0, alpha=0.6, \
                         marker="^", s=25)
+
+                    lonD = drift.Variables.lon
+                    latD = drift.Variables.lat
+                    drift_path = plt.scatter(lonD, latD, c='k', lw=0, s=25)
 
                     plt.legend([drift_path, pytkl_path],
                            ['Drifter', 'Model'])
 
-                    if str(sys.argv[2]) == '-s':
+                    if save:
                         print 'creating save directory...'
                         if not osp.exists(saveplot):
                             os.makedirs(saveplot)
@@ -310,5 +384,5 @@ if __name__ == '__main__':
 
                     plt.close(fig)
 
-                if str(sys.argv[1]) == '-st':
+                if args.a:
                     pass
