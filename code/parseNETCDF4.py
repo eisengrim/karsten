@@ -181,9 +181,9 @@ v = 2
 w = 3
 """
 
-        f.write(to_write % (outfile, outfile + '_output/'))
+        f.write(to_write % (outfile, outpath + 'output/'))
 
-    if not osp.exists(outfile + '_output/'):
-        os.makedirs(outfile + '_output/')
+    if not osp.exists(outpath + 'output/'):
+        os.makedirs(outpath + 'output/')
 
     print 'all done!'
