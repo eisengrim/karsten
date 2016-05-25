@@ -41,10 +41,10 @@ BFRIC = '0.015'
 SIM = ['2014_Aug_12_3D', '2013_Aug_08_3D', '2013_Aug_01_3D', '2012_Jun_05_3D', \
        '2012_Jul_05_3D', '2013_Oct_10_3D', '2013_Nov_05_3D', '2013_Nov_06_3D']
 
-PATH2OUT = '/EcoII/acadia_uni/projects/drifters/plots/pytrkr/'
+PATH2PLOT = '/EcoII/acadia_uni/projects/drifters/plots/pytrkr/'
 PATH2SIM = '/EcoII/acadia_uni/workspace/simulated/FVCOM/dngridCSR/' + \
                         'drifter_runs/BFRIC_'
-OUTPATH = '/EcoII/acadia_uni/projects/drifters/pyticle_tracker/'
+PATH2OUT = '/EcoII/acadia_uni/projects/drifters/pyticle_tracker/'
 PATH2INIT = '/array/home/119865c/karsten/drifters/start_info/'
 PATH2OBS = '/EcoII/acadia_uni/workspace/observed/'
 
@@ -217,7 +217,7 @@ if __name__ == '__main__':
                         '/output/subdomain_' + loc + '1_0001.nc'
             start_info = PATH2INIT + 'pyticle_info_' + loc + '_' + sim + '.txt'
             path2drift = PATH2OBS + loc + '/Drifter/'
-            outpath = OUTPATH
+            outpath = PATH2OUT
 
             print 'looking for ncfile...'
             if not osp.exists(filename):
@@ -339,7 +339,13 @@ if __name__ == '__main__':
                 if args.p:
                     # check whether or not to overwrite
                     savename = row[0][:-4] + '_plot.png'
-                    saveplot = PATH2OUT + loc + '_' + sim + '/'
+                    saveplot = PATH2PLOT + loc + '_' + sim
+                    if args.n:
+                        saveplot += '_n{}'.format(args.n[0])
+                    if args.r:
+                        saveplot += '_r{}'.format(args.r[0])
+                    saveplot += '/'
+
                     if args.s:
                         save = True
                         if args.w:
