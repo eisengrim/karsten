@@ -2,7 +2,7 @@
 
 """
 usage:
-python trackParticles.py [GP/PP/DG] YYYY_Mmm_DD_3D [0.015/0.012/0.009] path/2/pyticle/tracker/output.nc
+python plotParticles.py [GP/PP/DG] YYYY_Mmm_DD_3D [0.015/0.012/0.009] path/2/pyticle/tracker/output.nc
 """
 
 import sys, os

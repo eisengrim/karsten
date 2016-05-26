@@ -3,7 +3,7 @@
 """
 Creates plots and computes stats for pyticle tracker output.
 
-usage: python run_all_drifters.py [-p -a -s -w] -r N -n N
+usage: python trackDrifters.py [-p -a -s -w] -r N -n N
 
 cmd line args:
     -p :: plot
@@ -54,7 +54,7 @@ def parseArgs():
     Parses command line args.
     """
 
-    parser = arp.ArgumentParser(prog='run_all_drifters.py')
+    parser = arp.ArgumentParser(prog='trackDrifters.py')
 
     parser.add_argument('-p', action='store_true', help='generate plots.')
     parser.add_argument('-s', action='store_true', help='save plots.')
@@ -310,6 +310,7 @@ if __name__ == '__main__':
                     options['useLL']=True
                     options['layer']=0
                     options['gridDim']='2D'
+                    options['awgn']=True
                     options['projstr']='lcc +lon_0=-64.55880 +lat_0=41.78504 '+ \
                                    '+lat_1=39.69152 +lat_2=43.87856'
 
