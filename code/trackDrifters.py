@@ -15,6 +15,7 @@ cmd line args:
     -d :: select a simulation date
     -n :: number of particles (int)
     -r :: radius of initialisation (float)
+    -g :: additive white Gaussian noise
 """
 
 
@@ -66,6 +67,8 @@ def parseArgs():
             help='select a location tag.')
     parser.add_argument('-d', nargs='*', choices=SIM,\
             metavar='YYYY_Mmm_DD_3D', help='select a simulation date.')
+    parser.add_argument('-g', action="store_true", \
+            help='additive white Gaussian noise.')
     multiple = parser.add_argument_group('multiple pyticle options')
     multiple.add_argument('-r', nargs=1, type=float, metavar='#', \
             help='define an initial radius in degrees.')
@@ -310,7 +313,8 @@ if __name__ == '__main__':
                     options['useLL']=True
                     options['layer']=0
                     options['gridDim']='2D'
-                    options['awgn']=True
+                    if args.g:
+                        options['awgn']=True
                     options['projstr']='lcc +lon_0=-64.55880 +lat_0=41.78504 '+ \
                                    '+lat_1=39.69152 +lat_2=43.87856'
 
