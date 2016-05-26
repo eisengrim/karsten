@@ -9,7 +9,7 @@ cmd line args:
     -p :: plot
     -a :: compute stats
     -s :: save plots
-    -w :: overwrite current plots
+    -w :: overwrite current model and plots
     -b :: select a bottom friction
     -l :: select a location
     -d :: select a simulation date
@@ -60,7 +60,7 @@ def parseArgs():
     parser.add_argument('-p', action='store_true', help='generate plots.')
     parser.add_argument('-s', action='store_true', help='save plots.')
     parser.add_argument('-a', action='store_true', help='run analysis.')
-    parser.add_argument('-w', action='store_true', help='overwrite plots.')
+    parser.add_argument('-w', action='store_true', help='overwrite data.')
     parser.add_argument('-b', nargs=1, choices=('0.009','0.012','0.015'), \
             help='select a bottom friction.', default='0.015', type=str)
     parser.add_argument('-l', nargs='*', choices=LOC, \
@@ -298,8 +298,8 @@ if __name__ == '__main__':
                                               num))).T
                     print 'randomizing starting locations...'
 
-                # if the run exists, skip it
-                if not osp.exists(savedir):
+                # if the run exists or if overwrite False, skip it
+                if not osp.exists(savedir) or args.w:
                     # set options of drifters
                     # note: interpolation ratio is how many timesteps per
                     # model timestep to linearly interpolate nc data
@@ -319,6 +319,7 @@ if __name__ == '__main__':
                                    '+lat_1=39.69152 +lat_2=43.87856'
 
                     # run mitchell's particle tracker
+                    print 'tracking pyticles...'
                     start = time.clock()
                     mypy=pyticle(filename, inlocs, savedir, options=options)
                     mypy.run()
@@ -349,6 +350,8 @@ if __name__ == '__main__':
                         saveplot += '_n{}'.format(args.n[0])
                     if args.r:
                         saveplot += '_r{}'.format(args.r[0])
+                    if args.g:
+                        saveplot += '_g'
                     saveplot += '/'
 
                     if args.s:
@@ -387,7 +390,6 @@ if __name__ == '__main__':
                         print 'creating save directory...'
                         if not osp.exists(saveplot):
                             os.makedirs(saveplot)
-
                         plt.savefig(saveplot + savename)
 
                     else:
@@ -397,3 +399,5 @@ if __name__ == '__main__':
 
                 if args.a:
                     pass
+
+            print '...all done!'
