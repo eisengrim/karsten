@@ -4,6 +4,8 @@ import numpy as np
 from pyseidon import *
 import scipy.special as sps
 
+# local imports
+from drifterUtils import dn2dt
 
 def cubeRatio(uspdO, uspdS, debug=False, plot=False):
     """

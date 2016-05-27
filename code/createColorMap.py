@@ -1,5 +1,12 @@
 #! /usr/env/python2.7
 
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.ticker as tic
+import matplotlib.tri as Tri
+import seaborn as sns
+
+
 def createColorMap(model, var, title='', mesh=True, bounds=[], debug=True):
     """
     2D colormap plot of a given variable and mesh. This function is adapted from
