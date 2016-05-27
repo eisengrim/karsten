@@ -4,6 +4,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 from datetime import datetime, timedelta
 
+# local imports
+from drifterPlotUtils import *
+from drifterUtils import *
+from createColorMap import createColorMap
+
+
 # ----------Grand Passage:
 # PATH_TO_SIM_FILE="/EcoII/acadia_uni/workspace/simulated/FVCOM/dngridCSR/drifter_runs/GP/2013_Aug_01_3D/output/subdomain_GP1_0001.nc"
 # PATH_TO_OBS_FILE="/EcoII/acadia_uni/workspace/observed/GP/Drifter/GP_F_20130801_78_2_001_SE15.mat"

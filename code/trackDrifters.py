@@ -197,6 +197,80 @@ def createColorMap(model, var, title='', mesh=True, bounds=[], debug=True):
     return fig
 
 
+def plotTracks(row, pytkl, drift, ncfile, tideNorm, sim, loc, args):
+    """
+    Plots the tracks of the two objects.
+    """
+    # check whether or not to overwrite
+    savename = row[0][:-4] + '_plot.png'
+    saveplot = PATH2PLOT + loc + '_' + sim
+    if args.n:
+        saveplot += '_n{}'.format(args.n[0])
+    if args.r:
+        saveplot += '_r{}'.format(args.r[0])
+    if args.g:
+        saveplot += '_g'
+        saveplot += '/'
+
+    if args.s:
+        save = True
+        if args.w:
+            ow = True
+        else:
+            ow = False
+    else:
+        save = False
+        ow = False
+
+    if save and not ow:
+        if osp.exists(saveplot+savename):
+             return
+
+    print 'preparing to create color map...'
+    fig = createColorMap(ncfile, tideNorm[0,:], mesh=False, \
+                        title = 'Pyticle Track for ' + row[0])
+
+    # add scatter plots of data
+    lon = pytkl.variables['lon'][:]
+    lat = pytkl.variables['lat'][:]
+    print 'adding scatter plot...'
+    pytkl_path = plt.scatter(lon, lat, c='m', lw=0, alpha=0.6, marker="^", s=25)
+
+    lonD = drift.Variables.lon
+    latD = drift.Variables.lat
+    drift_path = plt.scatter(lonD, latD, c='k', lw=0, s=25)
+
+    plt.legend([drift_path, pytkl_path],['Drifter', 'Model'])
+
+    if save:
+        print 'creating save directory...'
+        if not osp.exists(saveplot):
+             os.makedirs(saveplot)
+        plt.savefig(saveplot + savename)
+
+    else:
+        plt.show()
+
+    plt.close(fig)
+
+
+def analyseTracks(row, pytkl, drift, ncfile, sim, loc, args):
+    """
+    Runs a bunch of statistics on the two tracks.
+    """
+    lon = pytkl.variables['lon'][:]
+    lat = pytkl.variables['lat'][:]
+
+    lonD = drift.Variables.lon
+    latD = drift.Variables.lat
+
+    print len(lon), len(lonD)
+
+    elems = pytkl.variables['indomain'][:]
+
+
+
+
 if __name__ == '__main__':
 
     # set cmd line options
@@ -299,7 +373,7 @@ if __name__ == '__main__':
                     print 'randomizing starting locations...'
 
                 # if the run exists or if overwrite False, skip it
-                if not osp.exists(savedir) or args.w:
+                if not osp.exists(savedir):
                     # set options of drifters
                     # note: interpolation ratio is how many timesteps per
                     # model timestep to linearly interpolate nc data
@@ -336,6 +410,7 @@ if __name__ == '__main__':
                 win1 = (np.abs(tModel - tPytkl.min())).argmin()
                 win2 = (np.abs(tModel - tPytkl.max())).argmin()
 
+                # calculate time norm
                 tideNorm = np.mean(ncfile.Variables.velo_norm[win1:win2,:,:], 0)
 
                 print 'opening drifter file...'
@@ -343,61 +418,9 @@ if __name__ == '__main__':
 
                 # do things based on command line args
                 if args.p:
-                    # check whether or not to overwrite
-                    savename = row[0][:-4] + '_plot.png'
-                    saveplot = PATH2PLOT + loc + '_' + sim
-                    if args.n:
-                        saveplot += '_n{}'.format(args.n[0])
-                    if args.r:
-                        saveplot += '_r{}'.format(args.r[0])
-                    if args.g:
-                        saveplot += '_g'
-                    saveplot += '/'
-
-                    if args.s:
-                        save = True
-                        if args.w:
-                            ow = True
-                        else:
-                            ow = False
-                    else:
-                        save = False
-                        ow = False
-
-                    if save and not ow:
-                        if osp.exists(saveplot+savename):
-                            continue
-
-                    print 'preparing to create color map...'
-                    fig = createColorMap(ncfile, tideNorm[0,:], mesh=False, \
-                            title = 'Pyticle Track for ' + row[0])
-
-                    # add scatter plots of data
-                    lon = pytkl.variables['lon'][:]
-                    lat = pytkl.variables['lat'][:]
-                    print 'adding scatter plot...'
-                    pytkl_path = plt.scatter(lon, lat, c='m', lw=0, alpha=0.6, \
-                        marker="^", s=25)
-
-                    lonD = drift.Variables.lon
-                    latD = drift.Variables.lat
-                    drift_path = plt.scatter(lonD, latD, c='k', lw=0, s=25)
-
-                    plt.legend([drift_path, pytkl_path],
-                           ['Drifter', 'Model'])
-
-                    if save:
-                        print 'creating save directory...'
-                        if not osp.exists(saveplot):
-                            os.makedirs(saveplot)
-                        plt.savefig(saveplot + savename)
-
-                    else:
-                        plt.show()
-
-                    plt.close(fig)
+                    plotTracks(row, pytkl, drift, ncfile, tideNorm, sim, loc, args)
 
                 if args.a:
-                    pass
+                    analyseTracks(row, pytkl, drift, ncfile, sim, loc, args)
 
             print '...all done!'

@@ -23,32 +23,8 @@ from functionsFvcom import *
 PATH2SIM="/EcoII/acadia_uni/workspace/simulated/FVCOM/dngridCSR/drifter_runs/"
 PATH2OBS="/EcoII/acadia_uni/workspace/observed/"
 
-
-def driftTimes(name, obs_dir):
-    """
-    Identify the timespans for each drifter file. Adapted from Jon Smith's
-    timespan.py.
-
-    input:
-        - drifter file name
-        - drifter directory
-    returns:
-        - starting and ending time
-    """
-    # iterate through the drifter files
-    start_time = []
-    end_time = []
-
-    try:
-        print 'examining drifter file...'
-        drft = sio.loadmat(obs_dir+name)
-        times = drft['gps_observation'][0][0][0][0]
-    except KeyError:
-        times = drft['time'][0][0][0][0]
-
-    # grab the times and convert them to strings
-    start, end = times[0], times[-1]
-    return start, end
+# local imports
+from drifterUtils import driftTimes
 
 
 def findStartConditions(ncfile, files, odir):
