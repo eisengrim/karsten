@@ -58,13 +58,13 @@ if __name__ == '__main__':
     given FVCOM grid models and drifter file(s).
     """
 
-    model = FVCOM(PATH2SIM, debug=True)
-    model2= FVCOM(PATH2SIM2, debug=True)
-    model3= FVCOM(PATH2SIM3, debug=True)
+    model = FVCOM(PATH2SIM, debug=False)
+    model2= FVCOM(PATH2SIM2, debug=False)
+    model3= FVCOM(PATH2SIM3, debug=False)
 
-    drift = Drifter(PATH2OBS, debug=True)
-    drift2= Drifter(PATH2OBS2, debug=True)
-    drift3= Drifter(PATH2OBS3, debug=True)
+    drift = Drifter(PATH2OBS, debug=False)
+    drift2= Drifter(PATH2OBS2, debug=False)
+    drift3= Drifter(PATH2OBS3, debug=False)
     # adcp = ADCP(PATH_TO_ADCP, debug=True)
 
     pytkl = nc.Dataset(PATH2PY, 'r', type='NETCDF4_CLASSIC')
