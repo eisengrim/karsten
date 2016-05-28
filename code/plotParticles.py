@@ -88,7 +88,8 @@ if __name__ == '__main__':
     print 'preparing to create color map...'
 
     fig = createColorMap(ncfile, tideNorm[0,:], mesh=False, \
-            title = 'Pyticle Track for ' +loc+'_'+ simdate)
+            title = 'Pyticle Track for ' +loc+'_'+ simdate,
+            label='Mean Velocity Norm (m/s)')
 
     lon = pytkl.variables['lon'][:]
     lat = pytkl.variables['lat'][:]
