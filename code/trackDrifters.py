@@ -16,6 +16,7 @@ cmd line args:
     -n :: number of particles (int)
     -r :: radius of initialisation (float)
     -g :: additive white Gaussian noise
+    -t :: change the starting time step
 """
 
 
@@ -36,6 +37,12 @@ from matplotlib import rc
 from datetime import datetime, timedelta
 from pyseidon import *
 import argparse as arp
+from sklearn.preprocessing import normalize
+
+# local imports
+from createColorMap import createColorMap
+from drifterUtils import *
+from drifterPlotUtils import plotTimeSeries
 
 LOC = ['DG', 'GP', 'PP']
 BFRIC = '0.015'
@@ -57,7 +64,9 @@ def parseArgs():
 
     parser = arp.ArgumentParser(prog='trackDrifters.py')
 
-    parser.add_argument('-p', action='store_true', help='generate plots.')
+    parser.add_argument('-p', nargs='*', metavar='#', choices=[1,2,3], \
+            default=0, type=int, help='generate plots.\n\t1 :: basic trajectory' \
+            + '\n\t2 :: lon/lat discrepancy' + '\n\t3 :: probability density')
     parser.add_argument('-s', action='store_true', help='save plots.')
     parser.add_argument('-a', action='store_true', help='run analysis.')
     parser.add_argument('-w', action='store_true', help='overwrite data.')
@@ -67,9 +76,11 @@ def parseArgs():
             help='select a location tag.')
     parser.add_argument('-d', nargs='*', choices=SIM,\
             metavar='YYYY_Mmm_DD_3D', help='select a simulation date.')
-    parser.add_argument('-g', action="store_true", \
+    multiple = parser.add_argument_group('pyticle options')
+    multiple.add_argument('-g', action="store_true", \
             help='additive white Gaussian noise.')
-    multiple = parser.add_argument_group('multiple pyticle options')
+    multiple.add_argument('-t', action='store_true', \
+            help='alter the initial timestep.')
     multiple.add_argument('-r', nargs=1, type=float, metavar='#', \
             help='define an initial radius in degrees.')
     multiple.add_argument('-n', type=int, metavar='#', nargs=1, \
@@ -83,147 +94,15 @@ def parseArgs():
     return args
 
 
-def dn2dt(datenum):
-    """
-    Convert matlab datenum to python datetime.
-    input:
-        - matlab datenum
-    return:
-        - python datetime
-    """
-
-    return datetime.fromordinal(int(datenum)) + \
-            timedelta(days=datenum % 1) - timedelta(days=366)
-
-
-def createColorMap(model, var, title='', mesh=True, bounds=[], debug=True):
-    """
-    2D colormap plot of a given variable and mesh. This function is adapted from
-    PySeidon's colormap_var, except it is customized to add the plot to an
-    existing figure. Holds the plot.
-
-    input:
-        - var = gridded variable, 1D numpy array (nele or nnode)
-        - title = plot title, string
-        - mesh = boolean, True with mesh, False without mesh
-        - bounds = list, constricted region subdomain in form of
-            [lon.min, lon.max, lat.min, lat.max]
-    returns:
-        - figure for future plotting
-    """
-
-    if debug:
-        print '\tplotting grid...'
-    # figure if var has nele or nnode dimensions
-    if var.shape[0] == model.Grid.nele:
-        dim = model.Grid.nele
-    elif var.shape[0] == model.Grid.nnode:
-        dim = model.Grid.nnode
-    else:
-        sys.exit('variable has the wrong dimension, shape not equal to grid ' \
-                + 'nummber of elements or nodes')
-
-    # bounding box nodes, elements and variables
-    lon = model.Grid.lon[:]
-    lat = model.Grid.lat[:]
-    if debug:
-        print '\tcomputing bounding box...'
-    if bounds:
-        bb = bounds
-    else:
-        bb = [lon.min(), lon.max(), lat.min(), lat.max()]
-
-    if not hasattr(model.Grid, 'triangleLL'):
-        # mesh triangle
-        if debug:
-            print '\tcomputing triangulation...'
-        trinodes = model.Grid.trinodes[:]
-        tri = Tri.Triangulation(lon, lat, triangles=trinodes)
-    else:
-        tri = model.Grid.triangleLL
-
-    # setting limits and levels of colormap
-    if debug:
-        print '\tcomputing cmin...'
-    cmin = var[:].min()
-    if debug:
-        print '\tcomputing cmax...'
-    cmax = var[:].max()
-    step = (cmax-cmin) / 50.0
-
-    # depth contours to plot
-    levels = np.arange(cmin, (cmax+step), step)
-
-    # define figure window
-    if debug:
-        print '\tcreating subplot...'
-
-    fig = plt.figure(figsize=(18,10))
-    plt.rc('font', size='22')
-    ax = fig.add_subplot(111, aspect=(1.0/np.cos(np.mean(lat) * np.pi/180.0)))
-
-    if debug:
-        print '\tcomputing colormap...'
-    cmap = plt.cm.jet
-    f = ax.tripcolor(tri, var[:], vmax=cmax, vmin=cmin, cmap=cmap)
-
-    if mesh:
-        plt.triplot(tri, color='white', linewidth=0.5)
-
-    # label and axis parameters
-    ax.set_xlabel('Longitude')
-    ax.set_ylabel('Latitude')
-    ax.patch.set_facecolor('0.5')
-    cbar = fig.colorbar(f, ax=ax)
-    cbar.set_label('Mean Velocity Norm (m/s)', rotation=-90, labelpad=30)
-    scale = 1
-
-    # ticker for coordinate degree axis
-    if debug:
-        print '\tconfiguring axis...'
-    ticks = tic.FuncFormatter(lambda lon, pos: '{0:g}'.format(lon/scale))
-    ax.xaxis.set_major_formatter(ticks)
-    ax.yaxis.set_major_formatter(ticks)
-    ax.set_xlim([bb[0], bb[1]])
-    ax.set_ylim([bb[2], bb[3]])
-    ax.grid()
-    plt.title(title)
-
-    plt.hold('on')
-
-    if debug:
-        print '...colormap passed.'
-
-    return fig
-
-
-def plotTracks(row, pytkl, drift, ncfile, tideNorm, sim, loc, args):
+def plotTracks(row, pytkl, drift, ncfile, tideNorm, sim, loc, args, saveplot):
     """
     Plots the tracks of the two objects.
     """
     # check whether or not to overwrite
     savename = row[0][:-4] + '_plot.png'
-    saveplot = PATH2PLOT + loc + '_' + sim
-    if args.n:
-        saveplot += '_n{}'.format(args.n[0])
-    if args.r:
-        saveplot += '_r{}'.format(args.r[0])
-    if args.g:
-        saveplot += '_g'
-        saveplot += '/'
 
-    if args.s:
-        save = True
-        if args.w:
-            ow = True
-        else:
-            ow = False
-    else:
-        save = False
-        ow = False
-
-    if save and not ow:
-        if osp.exists(saveplot+savename):
+    if args.s and not args.w:
+        if osp.exists(saveplot + savename):
              return
 
     print 'preparing to create color map...'
@@ -234,7 +113,7 @@ def plotTracks(row, pytkl, drift, ncfile, tideNorm, sim, loc, args):
     lon = pytkl.variables['lon'][:]
     lat = pytkl.variables['lat'][:]
     print 'adding scatter plot...'
-    pytkl_path = plt.scatter(lon, lat, c='m', lw=0, alpha=0.6, marker="^", s=25)
+    pytkl_path = plt.scatter(lon, lat, c='m', lw=0, alpha=0.6, marker="^", s=10)
 
     lonD = drift.Variables.lon
     latD = drift.Variables.lat
@@ -242,7 +121,7 @@ def plotTracks(row, pytkl, drift, ncfile, tideNorm, sim, loc, args):
 
     plt.legend([drift_path, pytkl_path],['Drifter', 'Model'])
 
-    if save:
+    if args.s:
         print 'creating save directory...'
         if not osp.exists(saveplot):
              os.makedirs(saveplot)
@@ -254,21 +133,119 @@ def plotTracks(row, pytkl, drift, ncfile, tideNorm, sim, loc, args):
     plt.close(fig)
 
 
-def analyseTracks(row, pytkl, drift, ncfile, sim, loc, args):
+def analyseTracks(pytkl, drift, ncfile, sim, loc, row, args):
     """
     Runs a bunch of statistics on the two tracks.
     """
-    lon = pytkl.variables['lon'][:]
-    lat = pytkl.variables['lat'][:]
+    pass
 
+
+def geographicError(pytkl, drift, ncfile, sim, loc, row, args, saveplot):
+    """
+    Calculates errors in lon/lat coordinates graphically.
+    """
+    # check whether or not to overwrite
+    savename = row[0][:-4] + '_lonlatErr.png'
+
+    if args.s and not args.w:
+        if osp.exists(saveplot + savename):
+             return
+
+    print 'calculating lon/lat error...'
+    lon = np.array(pytkl.variables['lon'][:])
+    lat = np.array(pytkl.variables['lat'][:])
     lonD = drift.Variables.lon
     latD = drift.Variables.lat
 
-    print len(lon), len(lonD)
+    print str(lon.shape[1]) + ' pyticles...'
+    print 'no. pts pytkl: ' + str(len(lon))
+    print 'no. pts drift: ' + str(len(lonD))
 
-    elems = pytkl.variables['indomain'][:]
+    uD = drift.Variables.u
+    vD = drift.Variables.v
+    u = np.array(pytkl.variables['u'][:])
+    v = np.array(pytkl.variables['v'][:])
+
+    dtime = drift.Variables.matlabTime
+    ptime = mjd2num(pytkl.variables['time'][:])
+
+    dtime = [dn2dt(x) for x in dtime]
+    ptime = [dn2dt(x) for x in ptime]
+
+    fig = plt.figure()
+    fig.suptitle('Positional Timeseries :: Model vs. Drifter\n' + \
+                 'BFRIC={} | Filename={}'.format(str(bfric), row[0][:-4]),
+                 fontsize=14)
+
+    print 'creating figures...'
+    result = plotTimeSeries(fig, (ptime, dtime), (lon, lonD), loc, \
+            label=['Model Drifter','Observed Drifter'], where=121, \
+            title='Longitudal Comparison', \
+            axis_label='Longitude $^\circ$', styles=['#1DA742','#900C3F'], \
+            debug=True, legend=False)
+
+    if not result:
+        sys.exit('error plotting longitudal data.')
+
+    result = plotTimeSeries(fig, (ptime, dtime), (lat, latD), loc, \
+            label=['Model Drifter','Observed Drifter'], where=122, \
+            title='Latitudal Comparison', \
+            axis_label='Latitude $^\circ$', styles=['#FFC300','#581845'], \
+            debug=True, legend=False)
+
+    if not result:
+        sys.exit('error plotting latitudal data.')
+
+    if args.s:
+        print 'creating save directory...'
+        if not osp.exists(saveplot):
+             os.makedirs(saveplot)
+        plt.savefig(saveplot + savename)
+
+    else:
+        plt.show()
+
+    plt.close(fig)
 
 
+def spatialProbability(pytkl, drift, ncfile, sim, loc, row, args, saveplot):
+    """
+    Creates a color-varying spatial plot of the model drifters.
+    """
+    # check whether or not to overwrite
+    savename = row[0][:-4] + '_prob.png'
+
+    if args.s and not args.w:
+        if osp.exists(saveplot + savename):
+             return
+
+    print 'calculating domain frequencies...'
+    elems = np.array(pytkl.variables['indomain'][:])
+
+    # calculate spatial probability density
+    # count the number of occurrences of elements
+    freq = np.zeros(ncfile.Grid.nele)
+    idx, cnt = np.unique(elems, return_counts=True)
+    freq[idx] = np.log(cnt)
+
+    # freq = freq.normalize(freq[:,np.newaxis], axis=0).ravel()
+    fig = createColorMap(ncfile, freq/np.amax(freq), mesh=False, \
+            label = "Probability of Model Drifter Transit",
+            title = "Spatially-Varying Probability Plot of Model Drifter\n" + \
+            'BFRIC={} | Filename={}'.format(str(bfric), row[0][:-4]))
+
+    plt.scatter(drift.Variables.lon, drift.Variables.lat, c='k', lw=0)
+
+    if args.s:
+        print 'creating save directory...'
+        if not osp.exists(saveplot):
+             os.makedirs(saveplot)
+        plt.savefig(saveplot + savename)
+
+    else:
+        plt.show()
+
+    plt.close(fig)
 
 
 if __name__ == '__main__':
@@ -301,20 +278,34 @@ if __name__ == '__main__':
                 continue
 
             # define output path
-            outpath = outpath + loc + '_' + sim
-
             if args.n:
-                outpath = outpath + '_n{}'.format(args.n[0])
+                outpath += 'n{}'.format(args.n[0])
             if args.r:
-                outpath = outpath + '_r{}'.format(args.r[0])
+                outpath += '_r{}'.format(args.r[0])
+            if args.t:
+                outpath += '_t'
+            if args.g:
+                outpath += '_g'
 
+            if outpath != '/':
+                outpath += '/'
+
+            outpath += loc + '_' + sim
+            if args.n:
+                outpath += '_n{}'.format(args.n[0])
+            if args.r:
+                outpath += '_r{}'.format(args.r[0])
+            if args.t:
+                outpath += '_t'
+            if args.g:
+                outpath += '_g'
             outpath += '/'
 
             if not osp.exists(outpath):
                 os.makedirs(outpath)
 
             # get starting locations and timesteps of drifters
-            indata=np.genfromtxt(start_info, dtype=None)
+            indata = np.genfromtxt(start_info, dtype=None)
             print str(indata.shape[0]) + ' drifters...'
 
             # set centre of location
@@ -372,14 +363,20 @@ if __name__ == '__main__':
                                               num))).T
                     print 'randomizing starting locations...'
 
-                # if the run exists or if overwrite False, skip it
+                if args.t:
+                    print 'randomizing starting times...'
+                    intime = row[3] + np.random.choice([-1,1])
+                else:
+                    intime = row[3]
+
+                # if the run exists skip it
                 if not osp.exists(savedir):
                     # set options of drifters
                     # note: interpolation ratio is how many timesteps per
                     # model timestep to linearly interpolate nc data
                     # output ratio is how often to output particle potision
                     options={}
-                    options['starttime']=row[3]
+                    options['starttime']=intime
                     options['endtime']=row[4]
                     options['interpolationratio']=60
                     options['outputratio']=2
@@ -400,6 +397,7 @@ if __name__ == '__main__':
                     print('run in: %f' % (time.clock() - start))
 
                 # open pytkl structure
+                print 'opening pytkl file...'
                 pytkl = nc.Dataset(savedir, 'r', format='NETCDF4_CLASSIC')
 
                 print 'creating time window...'
@@ -412,15 +410,46 @@ if __name__ == '__main__':
 
                 # calculate time norm
                 tideNorm = np.mean(ncfile.Variables.velo_norm[win1:win2,:,:], 0)
-
                 print 'opening drifter file...'
-                drift = Drifter(path2drift+row[0], debug=False)
+                drift = Drifter(path2drift + row[0], debug=False)
 
                 # do things based on command line args
-                if args.p:
-                    plotTracks(row, pytkl, drift, ncfile, tideNorm, sim, loc, args)
+                if 0 not in args.p:
+                    save = PATH2PLOT
+                    if args.n:
+                        save += 'n{}'.format(args.n[0])
+                    if args.r:
+                        save += '_r{}'.format(args.r[0])
+                    if args.t:
+                        save += '_t'
+                    if args.g:
+                        save += '_g'
+
+                    if save[-1] != '/':
+                        save += '/'
+
+                    save = save + loc + '_' + sim
+                    if args.n:
+                        save += '_n{}'.format(args.n[0])
+                    if args.r:
+                        save += '_r{}'.format(args.r[0])
+                    if args.t:
+                        save += '_t'
+                    if args.g:
+                        save += '_g'
+                    save += '/'
+
+                    if 1 in args.p:
+                        plotTracks(row, pytkl, drift, ncfile, tideNorm, sim, \
+                                    loc, args, save)
+                    if 2 in args.p:
+                        geographicError(pytkl, drift, ncfile, sim, loc, row, \
+                                    args, save)
+                    if 3 in args.p:
+                        spatialProbability(pytkl, drift, ncfile, sim, loc, \
+                                    row, args, save)
 
                 if args.a:
-                    analyseTracks(row, pytkl, drift, ncfile, sim, loc, args)
+                    analyseTracks(pytkl,drift,ncfile,sim,loc,row,args)
 
             print '...all done!'
