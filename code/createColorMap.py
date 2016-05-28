@@ -7,7 +7,8 @@ import matplotlib.tri as Tri
 import seaborn as sns
 
 
-def createColorMap(model, var, title='', mesh=True, bounds=[], debug=True):
+def createColorMap(model, var, title='', label='', mesh=True, bounds=[], \
+                    debug=True):
     """
     2D colormap plot of a given variable and mesh. This function is adapted from
     PySeidon's colormap_var, except it is customized to add the plot to an
@@ -86,7 +87,7 @@ def createColorMap(model, var, title='', mesh=True, bounds=[], debug=True):
     ax.set_ylabel('Latitude')
     ax.patch.set_facecolor('0.5')
     cbar = fig.colorbar(f, ax=ax)
-    cbar.set_label('Mean Velocity Norm (m/s)', rotation=-90, labelpad=30)
+    cbar.set_label(label, rotation=-90, labelpad=30)
     scale = 1
 
     # ticker for coordinate degree axis
