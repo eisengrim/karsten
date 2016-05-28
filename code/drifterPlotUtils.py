@@ -7,7 +7,6 @@ from scipy.stats.stats import pearsonr
 from drifterUtils import dn2dt
 
 
-
 def plotBias(speedS, ubias, bfric, debug=False):
     """
     Plots the bias information. Returns the R-squared.
@@ -177,61 +176,45 @@ def spatialRatios(model, lon, lat, uspdO, uspdS, debug=False):
         print '\tcreating color bar...'
 
 
-def plotTimeSeries(fig, valid, loc, bfric, where=121, ratio=1.0, debug=False):
+def plotTimeSeries(fig, dt, var, loc, label=['',''], title='', bg='#f5deb3', \
+                styles=['b--', '#8B0000'], axis_label='', where=121, \
+                legend=True, debug=False):
     """
-    Creates a comparative speed vs. time graph from a model object and a drifter
-    object, passed as a validation structure from PySeidon. This function is also
-    passed an existing figure object to plot on.
+    Creates a comparative var vs. time graph from a model object and a drifter
+    object. This function is also passed an existing figure object to plot on.
     input:
         - fig : figure object
-        - valid : validation object with drifter and model data
+        - datetimes : two datetimes
+        - vars : two variables to plot
         - loc : location tag
         - where : location of plot on fig (3 digit int)
     """
-    mTimes = valid.Variables.struct['mod_time']
-
-    # calculate speed from interpolated and observed date
-    oU = valid.Variables.struct['obs_timeseries']['u']
-    oV = valid.Variables.struct['obs_timeseries']['v']
-    mU = valid.Variables.struct['mod_timeseries']['u']
-    mV = valid.Variables.struct['mod_timeseries']['v']
-
-    if debug:
-        print '\tcalculating speeds...'
-    speedS = np.asarray(np.sqrt(mU**2 + mV**2))
-    speedO = np.asarray(np.sqrt(oU**2 + oV**2))
-
-    # ratio addition
-    if debug:
-        print '\tadding ratio adjustments...'
-    speedS = speedS * ratio
-
-    datetimes = np.asarray([dn2dt(time) for time in mTimes])
-
     if debug:
         print '\tcreating subplot...'
         print '\tconfiguring axes...'
 
     # add subplot and configure axes
-    ax2  = fig.add_subplot(where, axisbg='#f5deb3')
+    ax = fig.add_subplot(where, axisbg=bg)
 
     if debug:
-        print 'shapes are s: {}, o: {}, t: {}...'.format(speedS.shape, \
-                speedO.shape, datetimes.shape)
-    if speedO.shape[0] < 5:
+        print 'shapes are var: ({}, {}) t: ({}, {})...'.format(len(var[0]), \
+                    len(var[1]), len(dt[0]), len(dt[1]))
+
+    if len(var[0]) < 5 or len(var[1]) < 5:
         return False
     # if a value error is encountered due to the data in pyseidon,
     # do not plot, ignore and move on...
     try:
-        ax2.plot(datetimes, speedS, 'b--', label='Simulated', linewidth=2)
-        ax2.plot(datetimes, speedO, '#8B0000', label='Observed', linewidth=2)
+        ax.plot(dt[0], var[0], styles[0], label=label[0], linewidth=2)
+        ax.plot(dt[1], var[1], styles[1], label=label[1], linewidth=2)
     except ValueError:
         return False
 
-    ax2.set_ylabel('Speed (m/s)')
-    ax2.set_xlabel('Time (HH:MM:SS)')
-    ax2.set_title('Observed, Simulated Speed-Time Plot for BFRIC={}'.format(bfric))
-    plt.legend(loc='upper left')
+    ax.set_ylabel(axis_label)
+    ax.set_xlabel('Time (HH:MM:SS)')
+    ax.set_title(title)
+    if legend:
+        plt.legend(loc='upper left')
     # set the axis limits (hardcoded for consistency)
     # ax2.set_ylim(0.0, 3.0)
     plt.gcf().autofmt_xdate()

@@ -153,7 +153,7 @@ def createPlots(ncfile, files, loc, savepath, sim_name, bfric, tight=False, \
             print 'preparing to create colormap...'
         fig = createColorMap(ncfile, tideNorm[0,:], mesh=False, bounds=bounds, \
             title='Mean Velocity Norm During '+tide.capitalize()+' Tide', \
-            debug=debug)
+            label='Mean Velocity Norm (m/s)', debug=debug)
         # create title
         fig.suptitle('Data from ' + fname, fontsize=14)
 
@@ -178,7 +178,31 @@ def createPlots(ncfile, files, loc, savepath, sim_name, bfric, tight=False, \
 
         if debug:
             print 'preparing to plot time series...'
-        result = plotTimeSeries(fig, valid, loc, bfric, ratio=ratio, debug=debug)
+
+        # calculate speed from interpolated and observed date
+        mTimes = valid.Variables.struct['mod_time']
+        oU = valid.Variables.struct['obs_timeseries']['u']
+        oV = valid.Variables.struct['obs_timeseries']['v']
+        mU = valid.Variables.struct['mod_timeseries']['u']
+        mV = valid.Variables.struct['mod_timeseries']['v']
+
+        if debug:
+            print '\tcalculating speeds...'
+        speedS = np.asarray(np.sqrt(mU**2 + mV**2))
+        speedO = np.asarray(np.sqrt(oU**2 + oV**2))
+
+        # ratio addition
+        if debug:
+            print '\tadding ratio adjustments...'
+        speedS = speedS * ratio
+        datetimes = np.asarray([dn2dt(time) for time in mTimes])
+
+        result = plotTimeSeries(fig, np.reshape(np.tile(datetimes,2),\
+                (2, len(datetimes))), np.vstack((speedS, speedO)), \
+                loc, label=['Simulated','Observed'], where=121, \
+                title='Observed, Simulated Speed-Time Plot for BFRIC={}'\
+                .format(bfric), \
+                axis_label='Speed (m/s)', debug=False)
 
         if not result:
             if debug:
