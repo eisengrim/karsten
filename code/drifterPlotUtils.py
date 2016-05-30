@@ -177,8 +177,8 @@ def spatialRatios(model, lon, lat, uspdO, uspdS, debug=False):
 
 
 def plotTimeSeries(fig, dt, var, loc, label=['',''], title='', bg='#f5deb3', \
-                styles=['b--', '#8B0000'], axis_label='', where=121, \
-                legend=True, debug=False):
+                styles=['b--', '#8B0000'], axis_label='', where=121, axx=None, \
+                axy=None, legend=True, debug=False):
     """
     Creates a comparative var vs. time graph from a model object and a drifter
     object. This function is also passed an existing figure object to plot on.
@@ -187,14 +187,31 @@ def plotTimeSeries(fig, dt, var, loc, label=['',''], title='', bg='#f5deb3', \
         - datetimes : two datetimes
         - vars : two variables to plot
         - loc : location tag
+        - axx : x axis to share
+        - axy : y axis to share
+        - label : label for legend
+        - title : title of plot
+        - bg : hex code for background
+        - styles : line styles
+        - axis_label : label of var axis
+        - legend : boolean. add legend.
         - where : location of plot on fig (3 digit int)
+
+    return:
+        - fig, ax
     """
     if debug:
         print '\tcreating subplot...'
         print '\tconfiguring axes...'
 
     # add subplot and configure axes
-    ax = fig.add_subplot(where, axisbg=bg)
+    if axx or axy:
+        if axx:
+            ax = fig.add_subplot(where, axisbg=bg, sharex=axx)
+        if axy:
+            ax = fig.add_subplot(where, axisbg=bg, sharey=axy)
+    else:
+        ax = fig.add_subplot(where, axisbg=bg)
 
     if debug:
         print 'shapes are var: ({}, {}) t: ({}, {})...'.format(len(var[0]), \
@@ -214,15 +231,21 @@ def plotTimeSeries(fig, dt, var, loc, label=['',''], title='', bg='#f5deb3', \
     ax.set_xlabel('Time (HH:MM:SS)')
     ax.set_title(title)
     if legend:
-        plt.legend(loc='upper left')
+        leg = ax.legend(loc='best')
+        for lab in leg.get_texts():
+            lab.set_fontsize('small')
+        for lab in leg.get_lines():
+            lab.set_linewidth(1)
+
     # set the axis limits (hardcoded for consistency)
     # ax2.set_ylim(0.0, 3.0)
     plt.gcf().autofmt_xdate()
     plt.grid(True)
+    plt.tight_layout()
 
     plt.hold('on')
 
     if debug:
         print '...time series successfully plotted.'
 
-    return fig
+    return fig, ax

@@ -2,7 +2,7 @@
 #! encoding: utf-8
 
 """
-Filename = drifterBias.py
+Filename = biasDrifters.py
 Author = Kody Crowell
 Version = 1.0
 

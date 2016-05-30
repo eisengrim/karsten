@@ -197,7 +197,7 @@ def createPlots(ncfile, files, loc, savepath, sim_name, bfric, tight=False, \
         speedS = speedS * ratio
         datetimes = np.asarray([dn2dt(time) for time in mTimes])
 
-        result = plotTimeSeries(fig, np.reshape(np.tile(datetimes,2),\
+        result, axis = plotTimeSeries(fig, np.reshape(np.tile(datetimes,2),\
                 (2, len(datetimes))), np.vstack((speedS, speedO)), \
                 loc, label=['Simulated','Observed'], where=121, \
                 title='Observed, Simulated Speed-Time Plot for BFRIC={}'\

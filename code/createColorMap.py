@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as tic
 import matplotlib.tri as Tri
 import seaborn as sns
-
+import sys
 
 def createColorMap(model, var, title='', label='', mesh=True, bounds=[], \
                     debug=True):
