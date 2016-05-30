@@ -9,6 +9,7 @@ cmd line args:
     -p :: plot
     -a :: compute stats
     -s :: save plots
+    -v :: add verbosity
     -w :: overwrite current model and plots
     -b :: select a bottom friction
     -l :: select a location
@@ -70,6 +71,7 @@ def parseArgs():
     parser.add_argument('-s', action='store_true', help='save plots.')
     parser.add_argument('-a', action='store_true', help='run analysis.')
     parser.add_argument('-w', action='store_true', help='overwrite data.')
+    parser.add_argument('-v', action='store_true', help='verbose output.')
     parser.add_argument('-b', nargs=1, choices=('0.009','0.012','0.015'), \
             help='select a bottom friction.', default='0.015', type=str)
     parser.add_argument('-l', nargs='*', choices=LOC, \
@@ -105,14 +107,17 @@ def plotTracks(row, pytkl, drift, ncfile, tideNorm, sim, loc, args, saveplot):
         if osp.exists(saveplot + savename):
              return
 
-    print 'preparing to create color map...'
+    if args.v:
+        print 'preparing to create color map...'
     fig = createColorMap(ncfile, tideNorm[0,:], mesh=False, \
-                        title = 'Pyticle Track for ' + row[0])
+            title = 'Pyticle Track for ' + row[0][:-4],
+                        label = 'Mean Velocity Norm (m/s)')
 
     # add scatter plots of data
     lon = pytkl.variables['lon'][:]
     lat = pytkl.variables['lat'][:]
-    print 'adding scatter plot...'
+    if args.v:
+        print 'adding scatter plot...'
     pytkl_path = plt.scatter(lon, lat, c='m', lw=0, alpha=0.6, marker="^", s=10)
 
     lonD = drift.Variables.lon
@@ -122,7 +127,8 @@ def plotTracks(row, pytkl, drift, ncfile, tideNorm, sim, loc, args, saveplot):
     plt.legend([drift_path, pytkl_path],['Drifter', 'Model'])
 
     if args.s:
-        print 'creating save directory...'
+        if args.v:
+            print 'creating save directory...'
         if not osp.exists(saveplot):
              os.makedirs(saveplot)
         plt.savefig(saveplot + savename)
@@ -140,9 +146,20 @@ def analyseTracks(pytkl, drift, ncfile, sim, loc, row, args):
     pass
 
 
-def geographicError(pytkl, drift, ncfile, sim, loc, row, args, saveplot):
+def geographicError(pytkl, drift, ncfile, sim, loc, row, args, \
+                    saveplot, tn=None):
     """
     Calculates errors in lon/lat coordinates graphically.
+
+    pytkl :: pyticle object
+    ncfile :: FVCOM mode
+    drift :: drifter data
+    sim :: sim date
+    loc :: sim location
+    row :: drifter file name
+    args :: command line args
+    saveplot :: name of save plot dir
+    tn :: optional tideNorm, prints side by side
     """
     # check whether or not to overwrite
     savename = row[0][:-4] + '_lonlatErr.png'
@@ -151,15 +168,17 @@ def geographicError(pytkl, drift, ncfile, sim, loc, row, args, saveplot):
         if osp.exists(saveplot + savename):
              return
 
-    print 'calculating lon/lat error...'
+    if args.v:
+        print 'calculating lon/lat error...'
     lon = np.array(pytkl.variables['lon'][:])
     lat = np.array(pytkl.variables['lat'][:])
     lonD = drift.Variables.lon
     latD = drift.Variables.lat
 
-    print str(lon.shape[1]) + ' pyticles...'
-    print 'no. pts pytkl: ' + str(len(lon))
-    print 'no. pts drift: ' + str(len(lonD))
+    if args.v:
+        print str(lon.shape[1]) + ' pyticles...'
+        print 'no. pts pytkl: ' + str(len(lon))
+        print 'no. pts drift: ' + str(len(lonD))
 
     uD = drift.Variables.u
     vD = drift.Variables.v
@@ -172,32 +191,46 @@ def geographicError(pytkl, drift, ncfile, sim, loc, row, args, saveplot):
     dtime = [dn2dt(x) for x in dtime]
     ptime = [dn2dt(x) for x in ptime]
 
-    fig = plt.figure()
-    fig.suptitle('Positional Timeseries :: Model vs. Drifter\n' + \
+    if tn != None:
+        # **Needs work done to ensure proper scaling of subplots!
+        where1 = 221
+        where2 = 223
+        fig = createColorMap(ncfile, tn[0,:], mesh=False, \
+                title='Trajectory for {}'.format(row[0][:-4]), \
+                label='Mean Velocity Norm (m/s)')
+        fig.suptitle('Positional Timeseries :: ' + \
                  'BFRIC={} | Filename={}'.format(str(bfric), row[0][:-4]),
-                 fontsize=14)
+                 fontsize=10)
+        plt.scatter(lon, lat)
+        plt.scatter(lonD, latD)
+    else:
+        fig = plt.figure()
+        where1 = 211
+        where2 = 212
 
-    print 'creating figures...'
-    result = plotTimeSeries(fig, (ptime, dtime), (lon, lonD), loc, \
-            label=['Model Drifter','Observed Drifter'], where=121, \
-            title='Longitudal Comparison', \
-            axis_label='Longitude $^\circ$', styles=['#1DA742','#900C3F'], \
-            debug=True, legend=False)
+    if args.v:
+        print 'creating figures...'
+    result, axis = plotTimeSeries(fig, (ptime, dtime), (lon, lonD), loc, \
+            label=['Model Drifter','Observed Drifter'], where=where1, \
+            title='Longitudal Timeseries Comparison', \
+            axis_label='Longitude ($^\circ$)', styles=['#1DA742','#900C3F'], \
+            debug=True, legend=True)
 
     if not result:
         sys.exit('error plotting longitudal data.')
 
-    result = plotTimeSeries(fig, (ptime, dtime), (lat, latD), loc, \
-            label=['Model Drifter','Observed Drifter'], where=122, \
-            title='Latitudal Comparison', \
-            axis_label='Latitude $^\circ$', styles=['#FFC300','#581845'], \
-            debug=True, legend=False)
+    result, axis = plotTimeSeries(fig, (ptime, dtime), (lat, latD), loc, \
+            label=['Model Drifter','Observed Drifter'], where=where2, \
+            title='Latitudal Timeseries Comparison', \
+            axis_label='Latitude ($^\circ$)', styles=['#FFC300','#581845'], \
+            axx=axis, debug=True, legend=True)
 
     if not result:
         sys.exit('error plotting latitudal data.')
 
     if args.s:
-        print 'creating save directory...'
+        if args.v:
+            print 'creating save directory...'
         if not osp.exists(saveplot):
              os.makedirs(saveplot)
         plt.savefig(saveplot + savename)
@@ -219,7 +252,8 @@ def spatialProbability(pytkl, drift, ncfile, sim, loc, row, args, saveplot):
         if osp.exists(saveplot + savename):
              return
 
-    print 'calculating domain frequencies...'
+    if args.v:
+        print 'calculating domain frequencies...'
     elems = np.array(pytkl.variables['indomain'][:])
 
     # calculate spatial probability density
@@ -230,14 +264,15 @@ def spatialProbability(pytkl, drift, ncfile, sim, loc, row, args, saveplot):
 
     # freq = freq.normalize(freq[:,np.newaxis], axis=0).ravel()
     fig = createColorMap(ncfile, freq/np.amax(freq), mesh=False, \
-            label = "Probability of Model Drifter Transit",
+            label = "Log Probability of Model Drifter Transit",
             title = "Spatially-Varying Probability Plot of Model Drifter\n" + \
             'BFRIC={} | Filename={}'.format(str(bfric), row[0][:-4]))
 
     plt.scatter(drift.Variables.lon, drift.Variables.lat, c='k', lw=0)
 
     if args.s:
-        print 'creating save directory...'
+        if args.v:
+            print 'creating save directory...'
         if not osp.exists(saveplot):
              os.makedirs(saveplot)
         plt.savefig(saveplot + savename)
@@ -273,7 +308,8 @@ if __name__ == '__main__':
             path2drift = PATH2OBS + loc + '/Drifter/'
             outpath = PATH2OUT
 
-            print 'looking for ncfile...'
+            if args.v:
+                print 'looking for ncfile...'
             if not osp.exists(filename):
                 continue
 
@@ -306,7 +342,8 @@ if __name__ == '__main__':
 
             # get starting locations and timesteps of drifters
             indata = np.genfromtxt(start_info, dtype=None)
-            print str(indata.shape[0]) + ' drifters...'
+            if args.v:
+                print str(indata.shape[0]) + ' drifters...'
 
             # set centre of location
             if loc == 'GP':
@@ -322,12 +359,15 @@ if __name__ == '__main__':
                 sys.exit('simulation path not found / valid.')
 
             # open the FVCOM file
-            print 'opening fvcom file...'
+            if args.v:
+                print 'opening fvcom file...'
             ncfile = FVCOM(filename, debug=False)
-            print 'calculating ebb/flood split at centre of location...'
+            if args.v:
+                print 'calculating ebb/flood split at centre of location...'
             fI, eI, _, _ = ncfile.Util2D.ebb_flood_split_at_point(centre[0], \
                             centre[1])
-            print 'calculating model velocity norm...'
+            if args.v:
+                print 'calculating model velocity norm...'
             ncfile.Util3D.velo_norm()
 
             # set seaborn sns font
@@ -348,7 +388,8 @@ if __name__ == '__main__':
                 if args.n:
                     num = args.n[0]
                     inlocs = np.tile(inloc, (num, 1))
-                    print 'starting with {} particles...'.format(num)
+                    if args.v:
+                        print 'starting with {} particles...'.format(num)
                 else:
                     num = 1
 
@@ -361,10 +402,13 @@ if __name__ == '__main__':
                             np.random.uniform(inloc[1]-args.r[0]/110575.0, \
                                               inloc[1]+args.r[0]/110575.0, \
                                               num))).T
-                    print 'randomizing starting locations...'
+
+                    if args.v:
+                        print 'randomizing starting locations...'
 
                 if args.t:
-                    print 'randomizing starting times...'
+                    if args.v:
+                        print 'randomizing starting times...'
                     intime = row[3] + np.random.choice([-1,1])
                 else:
                     intime = row[3]
@@ -390,17 +434,20 @@ if __name__ == '__main__':
                                    '+lat_1=39.69152 +lat_2=43.87856'
 
                     # run mitchell's particle tracker
-                    print 'tracking pyticles...'
+                    if args.v:
+                        print 'tracking pyticles...'
                     start = time.clock()
                     mypy=pyticle(filename, inlocs, savedir, options=options)
                     mypy.run()
                     print('run in: %f' % (time.clock() - start))
 
                 # open pytkl structure
-                print 'opening pytkl file...'
+                if args.v:
+                    print 'opening pytkl file...'
                 pytkl = nc.Dataset(savedir, 'r', format='NETCDF4_CLASSIC')
 
-                print 'creating time window...'
+                if args.v:
+                    print 'creating time window...'
                 # this is in julian time
                 tModel = ncfile.Variables.julianTime
                 tPytkl = pytkl.variables['time'][:]
@@ -410,7 +457,8 @@ if __name__ == '__main__':
 
                 # calculate time norm
                 tideNorm = np.mean(ncfile.Variables.velo_norm[win1:win2,:,:], 0)
-                print 'opening drifter file...'
+                if args.v:
+                    print 'opening drifter file...'
                 drift = Drifter(path2drift + row[0], debug=False)
 
                 # do things based on command line args
