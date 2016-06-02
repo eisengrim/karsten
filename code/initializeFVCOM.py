@@ -3,6 +3,13 @@ from interpolation_utils import *
 import matplotlib.pyplot as plt
 import numpy as np
 from datetime import datetime, timedelta
+import netCDF4 as nc
+
+# local imports
+from drifterPlotUtils import *
+from drifterUtils import *
+from createColorMap import createColorMap
+
 
 # ----------Grand Passage:
 # PATH_TO_SIM_FILE="/EcoII/acadia_uni/workspace/simulated/FVCOM/dngridCSR/drifter_runs/GP/2013_Aug_01_3D/output/subdomain_GP1_0001.nc"
@@ -14,6 +21,7 @@ from datetime import datetime, timedelta
 LOC = ['GP', 'DG', 'PP']
 DATE = ['2013_Aug_08_3D', '2013_Nov_06_3D', '2014_Aug_12_3D']
 BF = ['0.015', '0.015', '0.015']
+run_str = 'n1000_r100.0_g'
 
 
 PATH2SIM="/EcoII/acadia_uni/workspace/simulated/FVCOM/dngridCSR/" \
@@ -33,23 +41,38 @@ PATH2OBS2="/EcoII/acadia_uni/workspace/observed/" + LOC[1] + "/Drifter/" \
 PATH2OBS3="/EcoII/acadia_uni/workspace/observed/" + LOC[2] + "/Drifter/" \
         + "PP_F_20140812_78_K_005_N02.mat"
 
+PATH2PY = '/EcoII/acadia_uni/projects/drifters/pyticle_tracker/' + run_str + \
+          '/' + LOC[0] + '_' + DATE[0] + '_' + run_str + '/' + \
+          "GP_F_20130808_78_1_001_output.nc"
+PATH2PY2 = '/EcoII/acadia_uni/projects/drifters/pyticle_tracker/' + run_str + \
+          '/' + LOC[1] + '_' + DATE[1] + '_' + run_str + '/' + \
+          "DG_F_20131106_78_1_001_SW10_output.nc"
+PATH2PY3 = '/EcoII/acadia_uni/projects/drifters/pyticle_tracker/' + run_str + \
+          '/' + LOC[2] + '_' + DATE[2] + '_' + run_str + '/' + \
+          "PP_F_20140812_78_K_005_N02_output.nc"
+
+
 if __name__ == '__main__':
     """
     The program initializes the FVCOM, Drifter, and Validation classes for the
     given FVCOM grid models and drifter file(s).
     """
 
-    model = FVCOM(PATH2SIM, debug=True)
-    model2= FVCOM(PATH2SIM2, debug=True)
-    model3= FVCOM(PATH2SIM3, debug=True)
+    model = FVCOM(PATH2SIM, debug=False)
+    model2= FVCOM(PATH2SIM2, debug=False)
+    model3= FVCOM(PATH2SIM3, debug=False)
 
-    drift = Drifter(PATH2OBS, debug=True)
-    drift2= Drifter(PATH2OBS2, debug=True)
-    drift3= Drifter(PATH2OBS3, debug=True)
+    drift = Drifter(PATH2OBS, debug=False)
+    drift2= Drifter(PATH2OBS2, debug=False)
+    drift3= Drifter(PATH2OBS3, debug=False)
     # adcp = ADCP(PATH_TO_ADCP, debug=True)
 
+    pytkl = nc.Dataset(PATH2PY, 'r', type='NETCDF4_CLASSIC')
+    pytkl2 = nc.Dataset(PATH2PY2, 'r', type='NETCDF4_CLASSIC')
+    pytkl3 = nc.Dataset(PATH2PY3, 'r', type='NETCDF4_CLASSIC')
+
     # create validation objects
-    valid = Validation(drift, model, flow='sf', debug=True)
-    valid2 = Validation(drift2, model2, flow='sf', debug=True)
-    valid3 = Validation(drift3, model3, flow='sf', debug=True)
+    # valid = Validation(drift, model, flow='sf', debug=True)
+    # valid2 = Validation(drift2, model2, flow='sf', debug=True)
+    # valid3 = Validation(drift3, model3, flow='sf', debug=True)
 

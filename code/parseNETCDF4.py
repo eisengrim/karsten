@@ -3,7 +3,7 @@
 """
 Parses netCDF4 data from FVCOM in a similar manner to tawe-telemac-utils.
 
-usage: python netCDF4.py loc bfric sim name_of_out_dir/
+usage: python netCDF4.py loc bfric sim
 """
 
 from __future__ import division
@@ -23,7 +23,6 @@ if __name__ == '__main__':
     loc = sys.argv[1]
     sim = sys.argv[3]
     bfric = str(sys.argv[2])
-    outname = str(sys.argv[4])
 
     if loc not in ['GP', 'PP', 'DG']:
         sys.exit('not a valid location tag.')
@@ -34,7 +33,7 @@ if __name__ == '__main__':
     filename = PATH2SIM+'BFRIC_'+bfric+'/'+loc+'/'+sim+ \
                 '/output/subdomain_'+loc+'1_0001.nc'
     dir_vel = PATH2VEL+bfric+'/'+mesh+'/'
-    outpath = PATH2OUT + mesh + '/' + mesh + '_output/'
+    outpath = PATH2OUT + mesh + '/'
 
     # loading netcdf file
     if not filename.endswith('.nc'):
@@ -126,10 +125,7 @@ if __name__ == '__main__':
     if not osp.exists(outpath):
         os.makedirs(outpath)
 
-    if outpath[-1] != '/':
-        outpath += '/'
-
-    outfile = outpath+mesh
+    outfile = outpath + mesh
 
     # numpy.savetxt write bytes to file, which doesn't work with the file open
     # in text mode. Work around this by opening in binary mode and writing
@@ -185,9 +181,9 @@ v = 2
 w = 3
 """
 
-        f.write(to_write % (outfile, outfile + '_output/'))
+        f.write(to_write % (outfile, outpath + 'output/'))
 
-    if not osp.exists(outfile + '_output/'):
-        os.makedirs(outfile + '_output/')
+    if not osp.exists(outpath + 'output/'):
+        os.makedirs(outpath + 'output/')
 
     print 'all done!'

@@ -12,6 +12,10 @@ from datetime import datetime, timedelta
 import h5py
 import netCDF4 as nc
 
+# local imports
+from drifterUtils import *
+
+
 PATH_TO_SIM_FILE="/EcoII/acadia_uni/workspace/simulated/FVCOM/dngridCSR/" \
    + "drifter_runs/BFRIC_0.015/GP/2013_Aug_08_3D/output/subdomain_GP1_0001.nc"
 PATH_TO_OBS_DIR="/EcoII/acadia_uni/workspace/observed/GP/Drifter/"
@@ -28,68 +32,6 @@ Code adopted from Jon Smith's timespan.py.
 Program called via command line with optional flags as:
   $ python spatialPlot.py <path_to_fvcom_file> <path_to_obs_dir> <location_tag> -debug
 """
-
-def mjd2num(x, debug=False):
-    '''
-    Convert FVCOM time to matlab datenum.
-    '''
-    y = x + 678942
-    if debug:
-        print 'converting from modified julian date to matlab datenum...'
-    return y
-
-
-def dn2dt(datenum, debug=False):
-    '''
-    Convert matlab datenum to python datetime.
-    '''
-    if debug:
-        print 'converting matlab datenum to python datetime...'
-
-    return datetime.fromordinal(int(datenum)) + \
-        timedelta(days=datenum % 1) - \
-        timedelta(days=366)
-
-
-def fvcomTime(filename, debug=False):
-    '''
-    Identify the timespan for a given FVCOM file.
-    '''
-    # iterate through the fvcom files
-
-    fvcom = nc.Dataset(filename)
-    if debug:
-        print 'nc fvcom file loaded....\n reading variables...'
-
-    try:
-        time = fvcom.variables['time'][:]
-    except KeyError:
-        time = fvcom.variables['time_JD'][:]
-
-    # grab the times and convert them to strings
-    start, end = mjd2num(time[0]), mjd2num(time[-1])
-    return start, end
-
-
-def driftTimes(name, debug=False):
-    '''
-    Identify the timespans for each drifter file.
-    '''
-    # iterate through the drifter files
-    start_time = []
-    end_time = []
-
-    try:
-        if debug:
-            print '\tloading file {}'.format(name)
-        drft = sio.loadmat(name)
-        times = drft['gps_observation'][0][0][0][0]
-    except KeyError:
-        times = drft['time'][0][0][0][0]
-
-    # grab the times and convert them to strings
-    start, end = times[0], times[-1]
-    return start, end
 
 
 def plotTrajectories(model, dir, matfiles, loc, debug=False):

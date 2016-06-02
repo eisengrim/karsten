@@ -36,47 +36,8 @@ PATH_TO_SIM="/EcoII/acadia_uni/workspace/simulated/FVCOM/dngridCSR/drifter_runs/
 PATH_TO_OBS="/EcoII/acadia_uni/workspace/observed/"
 GRID='dngridCSR'
 
-def dn2dt(datenum, debug=False):
-    """
-    Convert matlab dateum to python datetime.
-
-    input:
-        - matlab datenum
-    returns:
-        - python datetime
-    """
-    if debug:
-        print 'converting matlab datenum to python datetime...'
-
-    return datetime.fromordinal(int(datenum)) + \
-           timedelta(days=datenum % 1) - \
-           timedelta(days=366)
-
-def driftTimes(name, debug=False):
-    """
-    Identify the timespans for each drifter file. Adapted from Jon Smith's
-    timespan.py.
-
-    input:
-        - drifter file name
-    returns:
-        - starting and ending time
-    """
-    # iterate through the drifter files
-    start_time = []
-    end_time = []
-
-    try:
-        if debug:
-            print 'examining drifter file...'
-        drft = sio.loadmat(name)
-        times = drft['gps_observation'][0][0][0][0]
-    except KeyError:
-        times = drft['time'][0][0][0][0]
-
-    # grab the times and convert them to strings
-    start, end = times[0], times[-1]
-    return start, end
+# local imports
+from drifterUtils import dn2dt, driftTimes
 
 
 def parseArgs():

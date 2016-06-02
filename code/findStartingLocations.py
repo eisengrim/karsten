@@ -18,36 +18,13 @@ import scipy as sp
 import scipy.io as sio
 import os.path as osp
 from pyseidon import *
+from functionsFvcom import *
 
 PATH2SIM="/EcoII/acadia_uni/workspace/simulated/FVCOM/dngridCSR/drifter_runs/"
 PATH2OBS="/EcoII/acadia_uni/workspace/observed/"
 
-
-def driftTimes(name, obs_dir):
-    """
-    Identify the timespans for each drifter file. Adapted from Jon Smith's
-    timespan.py.
-
-    input:
-        - drifter file name
-        - drifter directory
-    returns:
-        - starting and ending time
-    """
-    # iterate through the drifter files
-    start_time = []
-    end_time = []
-
-    try:
-        print 'examining drifter file...'
-        drft = sio.loadmat(obs_dir+name)
-        times = drft['gps_observation'][0][0][0][0]
-    except KeyError:
-        times = drft['time'][0][0][0][0]
-
-    # grab the times and convert them to strings
-    start, end = times[0], times[-1]
-    return start, end
+# local imports
+from drifterUtils import driftTimes
 
 
 def findStartConditions(ncfile, files, odir):
@@ -66,6 +43,8 @@ def findStartConditions(ncfile, files, odir):
     names= []
     lon0 = []
     lat0 = []
+    x0 = []
+    y0 = []
     mtime0 = []
     firststep = []
     laststep = []
@@ -85,7 +64,13 @@ def findStartConditions(ncfile, files, odir):
                     drift.Variables.matlabTime[-1]))))
         names.append(fname)
 
-    return names, lon0, lat0, mtime0, firststep, laststep
+        idx = closest_points(drift.Variables.lon[0], drift.Variables.lat[0], \
+                            ncfile.Grid.lon, ncfile.Grid.lat)
+
+        x0.append(ncfile.Grid.x[idx])
+        y0.append(ncfile.Grid.y[idx])
+
+    return names, lon0, lat0, x0, y0, mtime0, firststep, laststep
 
 
 if __name__ == '__main__':
@@ -124,7 +109,7 @@ if __name__ == '__main__':
     if not files:
         sys.exit('drifters given are not within model runtime window.')
 
-    nom, lon0, lat0, mtime0, first, last = findStartConditions(ncfile, \
+    nom, lon0, lat0, x0, y0, mtime0, first, last = findStartConditions(ncfile, \
                 files, obs_dir)
 
     # write init loc data to text file
@@ -143,6 +128,9 @@ if __name__ == '__main__':
             f.write(str(name) + ' ' + str(idx1) + ' ' + str(idx2) + '\n')
 
     np.savetxt('pyticle_info_'+outname+'.txt', \
-                np.column_stack((nom, lon0,lat0,first,last)), fmt='%s')
+                np.column_stack((nom,lon0,lat0,first,last)), fmt='%s')
+
+    np.savetxt('porpoise_info_'+outname+'.txt', \
+                np.column_stack((nom,x0,y0,first,last)), fmt='%s')
 
     print '...all done!'

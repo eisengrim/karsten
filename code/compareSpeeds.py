@@ -46,52 +46,16 @@ import matplotlib.ticker as tic
 import seaborn as sns
 from pyseidon import *
 
+# local imports
+from createColorMap import createColorMap
+from drifterUtils import *
+from drifterPlotUtils import *
+
+
 PATH_TO_SIM="/EcoII/acadia_uni/workspace/simulated/FVCOM/dngridCSR/drifter_runs/"
 PATH_TO_OBS="/EcoII/acadia_uni/workspace/observed/"
 SAVEPATH="/EcoII/acadia_uni/projects/drifters/plots/"
 GRID='dngridCSR'
-
-def dn2dt(datenum, debug=False):
-    """
-    Convert matlab dateum to python datetime.
-
-    input:
-        - matlab datenum
-    returns:
-        - python datetime
-    """
-    if debug:
-        print 'converting matlab datenum to python datetime...'
-
-    return datetime.fromordinal(int(datenum)) + \
-           timedelta(days=datenum % 1) - \
-           timedelta(days=366)
-
-def driftTimes(name, debug=False):
-    """
-    Identify the timespans for each drifter file. Adapted from Jon Smith's
-    timespan.py.
-
-    input:
-        - drifter file name
-    returns:
-        - starting and ending time
-    """
-    # iterate through the drifter files
-    start_time = []
-    end_time = []
-
-    try:
-        if debug:
-            print 'loading file {}...'.format(name)
-        drft = sio.loadmat(name)
-        times = drft['gps_observation'][0][0][0][0]
-    except KeyError:
-        times = drft['time'][0][0][0][0]
-
-    # grab the times and convert them to strings
-    start, end = times[0], times[-1]
-    return start, end
 
 
 def createPlots(ncfile, files, loc, savepath, sim_name, bfric, tight=False, \
@@ -189,7 +153,7 @@ def createPlots(ncfile, files, loc, savepath, sim_name, bfric, tight=False, \
             print 'preparing to create colormap...'
         fig = createColorMap(ncfile, tideNorm[0,:], mesh=False, bounds=bounds, \
             title='Mean Velocity Norm During '+tide.capitalize()+' Tide', \
-            debug=debug)
+            label='Mean Velocity Norm (m/s)', debug=debug)
         # create title
         fig.suptitle('Data from ' + fname, fontsize=14)
 
@@ -214,7 +178,31 @@ def createPlots(ncfile, files, loc, savepath, sim_name, bfric, tight=False, \
 
         if debug:
             print 'preparing to plot time series...'
-        result = plotTimeSeries(fig, valid, loc, bfric, ratio=ratio, debug=debug)
+
+        # calculate speed from interpolated and observed date
+        mTimes = valid.Variables.struct['mod_time']
+        oU = valid.Variables.struct['obs_timeseries']['u']
+        oV = valid.Variables.struct['obs_timeseries']['v']
+        mU = valid.Variables.struct['mod_timeseries']['u']
+        mV = valid.Variables.struct['mod_timeseries']['v']
+
+        if debug:
+            print '\tcalculating speeds...'
+        speedS = np.asarray(np.sqrt(mU**2 + mV**2))
+        speedO = np.asarray(np.sqrt(oU**2 + oV**2))
+
+        # ratio addition
+        if debug:
+            print '\tadding ratio adjustments...'
+        speedS = speedS * ratio
+        datetimes = np.asarray([dn2dt(time) for time in mTimes])
+
+        result, axis = plotTimeSeries(fig, np.reshape(np.tile(datetimes,2),\
+                (2, len(datetimes))), np.vstack((speedS, speedO)), \
+                loc, label=['Simulated','Observed'], where=121, \
+                title='Observed, Simulated Speed-Time Plot for BFRIC={}'\
+                .format(bfric), \
+                axis_label='Speed (m/s)', debug=False)
 
         if not result:
             if debug:
@@ -241,175 +229,6 @@ def createPlots(ncfile, files, loc, savepath, sim_name, bfric, tight=False, \
 
         # clear the figure window
         plt.clf()
-
-
-def plotTimeSeries(fig, valid, loc, bfric, ratio=1.0, debug=False):
-    """
-    Creates a comparative speed vs. time graph from a model object and a drifter
-    object, passed as a validation structure from PySeidon. This function is also
-    passed an existing figure object to plot on.
-
-    input:
-        - fig : figure object
-        - valid : validation object with drifter and model data
-        - loc : location tag
-    """
-    mTimes = valid.Variables.struct['mod_time']
-
-    # calculate speed from interpolated and observed date
-    oU = valid.Variables.struct['obs_timeseries']['u']
-    oV = valid.Variables.struct['obs_timeseries']['v']
-    mU = valid.Variables.struct['mod_timeseries']['u']
-    mV = valid.Variables.struct['mod_timeseries']['v']
-
-    if debug:
-        print '\tcalculating speeds...'
-    speedS = np.asarray(np.sqrt(mU**2 + mV**2))
-    speedO = np.asarray(np.sqrt(oU**2 + oV**2))
-
-    # ratio addition
-    if debug:
-        print '\tadding ratio adjustments...'
-    speedS = speedS * ratio
-
-    datetimes = np.asarray([dn2dt(time) for time in mTimes])
-
-    if debug:
-        print '\tcreating subplot...'
-        print '\tconfiguring axes...'
-
-    # add subplot and configure axes
-    ax2  = fig.add_subplot(121, axisbg='#f5deb3')
-
-    if debug:
-        print 'shapes are s: {}, o: {}, t: {}...'.format(speedS.shape, \
-                speedO.shape, datetimes.shape)
-    if speedO.shape[0] < 5:
-        return False
-    # if a value error is encountered due to the data in pyseidon,
-    # do not plot, ignore and move on...
-    try:
-        ax2.plot(datetimes, speedS, 'b--', label='Simulated', linewidth=2)
-        ax2.plot(datetimes, speedO, '#8B0000', label='Observed', linewidth=2)
-    except ValueError:
-        return False
-
-    ax2.set_ylabel('Speed (m/s)')
-    ax2.set_xlabel('Time (HH:MM:SS)')
-    ax2.set_title('Observed, Simulated Speed-Time Plot for BFRIC={}'.format(bfric))
-    plt.legend(loc='upper left')
-    # set the axis limits (hardcoded for consistency)
-    # ax2.set_ylim(0.0, 3.0)
-    plt.gcf().autofmt_xdate()
-    plt.grid(True)
-
-    plt.hold('on')
-
-    if debug:
-        print '...time series successfully plotted.'
-
-    return True
-
-
-def createColorMap(model, var, title='', mesh=True, bounds=[], debug=False):
-    """
-    2D colormap plot of a given variable and mesh. This function is adapted from
-    PySeidon's colormap_var, except it is customized to add the plot to an
-    existing figure. Holds the plot.
-
-    input:
-        - var = gridded variable, 1D numpy array (nele or nnode)
-        - title = plot title, string
-        - mesh = boolean, True with mesh, False without mesh
-        - bounds = list, constricted region subdomain in form of
-            [lon.min, lon.max, lat.min, lat.max]
-    returns:
-        - figure for future plotting
-    """
-
-    if debug:
-        print '\tplotting grid...'
-    # figure if var has nele or nnode dimensions
-    if var.shape[0] == model.Grid.nele:
-        dim = model.Grid.nele
-    elif var.shape[0] == model.Grid.nnode:
-        dim = model.Grid.nnode
-    else:
-        sys.exit('variable has the wrong dimension, shape not equal to grid ' \
-                + 'nummber of elements or nodes')
-
-    # bounding box nodes, elements and variables
-    lon = model.Grid.lon[:]
-    lat = model.Grid.lat[:]
-    if debug:
-        print '\tcomputing bounding box...'
-    if bounds:
-        bb = bounds
-    else:
-        bb = [lon.min(), lon.max(), lat.min(), lat.max()]
-
-    if not hasattr(model.Grid, 'triangleLL'):
-        # mesh triangle
-        if debug:
-            print '\tcomputing triangulation...'
-        trinodes = model.Grid.trinodes[:]
-        tri = Tri.Triangulation(lon, lat, triangles=trinodes)
-    else:
-        tri = model.Grid.triangleLL
-
-    # setting limits and levels of colormap
-    if debug:
-        print '\tcomputing cmin...'
-    cmin = var[:].min()
-    if debug:
-        print '\tcomputing cmax...'
-    cmax = var[:].max()
-    step = (cmax-cmin) / 50.0
-
-    # depth contours to plot
-    levels = np.arange(cmin, (cmax+step), step)
-
-    # define figure window
-    if debug:
-        print '\tcreating subplot...'
-
-    fig = plt.figure(figsize=(18,10))
-    plt.rc('font', size='22')
-    ax = fig.add_subplot(122, aspect=(1.0/np.cos(np.mean(lat) * np.pi/180.0)))
-
-    if debug:
-        print '\tcomputing colormap...'
-    cmap = plt.cm.jet
-    f = ax.tripcolor(tri, var[:], vmax=cmax, vmin=cmin, cmap=cmap)
-
-    if mesh:
-        plt.triplot(tri, color='white', linewidth=0.5)
-
-    # label and axis parameters
-    ax.set_xlabel('Longitude')
-    ax.set_ylabel('Latitude')
-    ax.patch.set_facecolor('0.5')
-    cbar = fig.colorbar(f, ax=ax)
-    cbar.set_label(title, rotation=-90, labelpad=30)
-    scale = 1
-
-    # ticker for coordinate degree axis
-    if debug:
-        print '\tconfiguring axis...'
-    ticks = tic.FuncFormatter(lambda lon, pos: '{0:g}'.format(lon/scale))
-    ax.xaxis.set_major_formatter(ticks)
-    ax.yaxis.set_major_formatter(ticks)
-    ax.set_xlim([bb[0], bb[1]])
-    ax.set_ylim([bb[2], bb[3]])
-    ax.grid()
-    plt.title('Observed Drifter Trajectory')
-
-    plt.hold('on')
-
-    if debug:
-        print '...colormap passed.'
-
-    return fig
 
 
 def parseArgs():
