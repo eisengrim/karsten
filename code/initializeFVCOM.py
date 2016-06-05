@@ -21,7 +21,7 @@ from createColorMap import createColorMap
 LOC = ['GP', 'DG', 'PP']
 DATE = ['2013_Aug_08_3D', '2013_Nov_06_3D', '2014_Aug_12_3D']
 BF = ['0.015', '0.015', '0.015']
-run_str = 'n1000_r100.0_g'
+run_str = 'n15_r40.0'
 
 
 PATH2SIM="/EcoII/acadia_uni/workspace/simulated/FVCOM/dngridCSR/" \
