@@ -6,6 +6,33 @@ import scipy.io as sio
 import netCDF4 as nc
 
 
+def broadcast(arr1, arr2, debug=False):
+    '''
+    Finds the closest elements of two arrays for broadcasting.
+    Returns a list of indices. arr1 is compared to arr2.
+
+    arr1, arr2 :: arrays of different length
+    len(arr1) > len(arr2)
+    '''
+    return [np.abs(arr1 - t).argmin() for t in arr2]
+
+
+def haversine(lon, lat):
+    '''
+    Computes the distance between consecutive lat/lon coordinates in m.
+
+    '''
+    R = 6371000
+    dLon = np.deg2rad(np.diff(lon))
+    dLat = np.deg2rad(np.diff(lat))
+
+    a = np.square(np.sin(dLat/2)) + np.square(np.sin(dLon/2)) \
+            + (np.cos(np.deg2rad(lat[:-1]))*np.cos(np.deg2rad(lat[1:])))
+    c = 2*np.arctan2(np.sqrt(a), np.sqrt(1-a))
+
+    return R*c
+
+
 def driftTimes(name, debug=False):
     """
     Identify the timespans for each drifter file. Adapted from Jon Smith's
