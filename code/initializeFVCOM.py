@@ -18,11 +18,13 @@ from createColorMap import createColorMap
 
 # ----------Digby Gut:
 
-LOC = ['GP', 'DG', 'PP']
-DATE = ['2013_Aug_08_3D', '2013_Nov_06_3D', '2014_Aug_12_3D']
+LOC = ['GP', 'GP', 'GP']
+DATE = ['2013_Aug_08_3D', '2013_Aug_01_3D', '2013_Aug_02_3D']
 BF = ['0.015', '0.015', '0.015']
 run_str = 'n15_r40.0'
-
+OBS = ["GP_F_20130808_78_1_001", \
+       "GP_F_20130801_78_1_007_SE15",  \
+       "GP_E_20130802_H_005"]
 
 PATH2SIM="/EcoII/acadia_uni/workspace/simulated/FVCOM/dngridCSR/" \
         + "drifter_runs/BFRIC_" + BF[0] + "/" + LOC[0] + "/" + DATE[0] + \
@@ -35,21 +37,21 @@ PATH2SIM3='/EcoII/acadia_uni/workspace/simulated/FVCOM/dngridCSR/' \
         '/output/' + 'subdomain_' + LOC[2] + '1_0001.nc'
 
 PATH2OBS="/EcoII/acadia_uni/workspace/observed/" + LOC[0] + "/Drifter/" \
-        + "GP_F_20130808_78_1_001.mat"
+        + OBS[0] + ".mat"
 PATH2OBS2="/EcoII/acadia_uni/workspace/observed/" + LOC[1] + "/Drifter/" \
-        + "DG_F_20131106_78_1_001_SW10.mat"
+        + OBS[1] + ".mat"
 PATH2OBS3="/EcoII/acadia_uni/workspace/observed/" + LOC[2] + "/Drifter/" \
-        + "PP_F_20140812_78_K_005_N02.mat"
+        + OBS[2] + ".mat"
 
 PATH2PY = '/EcoII/acadia_uni/projects/drifters/pyticle_tracker/' + run_str + \
           '/' + LOC[0] + '_' + DATE[0] + '_' + run_str + '/' + \
-          "GP_F_20130808_78_1_001_output.nc"
+          OBS[0] + "_output.nc"
 PATH2PY2 = '/EcoII/acadia_uni/projects/drifters/pyticle_tracker/' + run_str + \
           '/' + LOC[1] + '_' + DATE[1] + '_' + run_str + '/' + \
-          "DG_F_20131106_78_1_001_SW10_output.nc"
+          OBS[1] + "_output.nc"
 PATH2PY3 = '/EcoII/acadia_uni/projects/drifters/pyticle_tracker/' + run_str + \
           '/' + LOC[2] + '_' + DATE[2] + '_' + run_str + '/' + \
-          "PP_F_20140812_78_K_005_N02_output.nc"
+          OBS[2] + "_output.nc"
 
 
 if __name__ == '__main__':
