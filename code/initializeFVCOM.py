@@ -1,30 +1,26 @@
 from pyseidon import *
 from interpolation_utils import *
 import matplotlib.pyplot as plt
+import seaborn as sns
 import numpy as np
 from datetime import datetime, timedelta
 import netCDF4 as nc
 
 # local imports
 from drifterPlotUtils import *
+from drifterAnalysisUtils import *
 from drifterUtils import *
+from plotParticles import *
 from createColorMap import createColorMap
 
-
-# ----------Grand Passage:
-# PATH_TO_SIM_FILE="/EcoII/acadia_uni/workspace/simulated/FVCOM/dngridCSR/drifter_runs/GP/2013_Aug_01_3D/output/subdomain_GP1_0001.nc"
-# PATH_TO_OBS_FILE="/EcoII/acadia_uni/workspace/observed/GP/Drifter/GP_F_20130801_78_2_001_SE15.mat"
-# PATH_TO_ADCP='/EcoII/acadia_uni/workspace/observed/GP/ADCP/Flow_GP-130730-TA_avg15.mat'
-
-# ----------Digby Gut:
 
 LOC = ['GP', 'GP', 'GP']
 DATE = ['2013_Aug_08_3D', '2013_Aug_01_3D', '2013_Aug_02_3D']
 BF = ['0.015', '0.015', '0.015']
 run_str = 'n15_r40.0'
-OBS = ["GP_F_20130808_78_1_001", \
+OBS = ["GP_F_20130808_H_002", \
        "GP_F_20130801_78_1_007_SE15",  \
-       "GP_E_20130802_H_005"]
+       "GP_E_20130802_78_1_002"]
 
 PATH2SIM="/EcoII/acadia_uni/workspace/simulated/FVCOM/dngridCSR/" \
         + "drifter_runs/BFRIC_" + BF[0] + "/" + LOC[0] + "/" + DATE[0] + \
@@ -72,6 +68,36 @@ if __name__ == '__main__':
     pytkl = nc.Dataset(PATH2PY, 'r', type='NETCDF4_CLASSIC')
     pytkl2 = nc.Dataset(PATH2PY2, 'r', type='NETCDF4_CLASSIC')
     pytkl3 = nc.Dataset(PATH2PY3, 'r', type='NETCDF4_CLASSIC')
+
+    # model.Util3D.velo_norm()
+    # tmodel = model.Variables.julianTime
+    # tpytkl = pytkl.variables['time'][:]
+    # win1 = (np.abs(tmodel-tpytkl.min())).argmin()
+    # win2 = (np.abs(tmodel-tpytkl.max())).argmin()
+    # if win1 == win2:
+    #     tideNorm = np.mean(model.Variables.velo_norm[win1,:,:], 0)
+    # else:
+    #     tideNorm = np.mean(model.Variables.velo_norm[win1:win2,:,:], 0)
+
+    model2.Util3D.velo_norm()
+    tmodel = model2.Variables.julianTime
+    tpytkl = pytkl2.variables['time'][:]
+    win1 = (np.abs(tmodel-tpytkl.min())).argmin()
+    win2 = (np.abs(tmodel-tpytkl.max())).argmin()
+    if win1 == win2:
+        tideNorm2 = np.mean(model2.Variables.velo_norm[win1,:,:], 0)
+    else:
+        tideNorm2 = np.mean(model2.Variables.velo_norm[win1:win2,:,:], 0)
+
+    # model3.Util3D.velo_norm()
+    # tmodel = model3.Variables.julianTime
+    # tpytkl = pytkl3.variables['time'][:]
+    # win1 = (np.abs(tmodel-tpytkl.min())).argmin()
+    # win2 = (np.abs(tmodel-tpytkl.max())).argmin()
+    # if win1 == win2:
+    #     tideNorm3 = np.mean(model3.Variables.velo_norm[win1,:,:], 0)
+    # else:
+    #     tideNorm3 = np.mean(model3.Variables.velo_norm[win1:win2,:,:], 0)
 
     # create validation objects
     # valid = Validation(drift, model, flow='sf', debug=True)

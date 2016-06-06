@@ -19,12 +19,13 @@ cmd line args:
     -w :: add diffusion in calculations from wiener process
     -f :: diffusion fudge factor
     -t :: change the starting time step
+    -e :: define existing pyticle file, default None
 """
 
 
 # lib imports
-from pyticle_tracker import pyticle
 from __future__ import division
+from pyticle_tracker import pyticle
 import sys, os
 import os.path as osp
 import scipy as sp
@@ -48,6 +49,7 @@ import pylab
 from createColorMap import createColorMap
 from drifterUtils import *
 from drifterPlotUtils import plotTimeSeries
+from plotParticles import *
 
 LOC = ['DG', 'GP', 'PP']
 BFRIC = '0.015'
@@ -95,6 +97,8 @@ def parseArgs():
             help='define an initial radius in degrees.')
     multiple.add_argument('-n', type=int, metavar='#', nargs=1, \
             help='define a number of particles.')
+    parser.add_argument('-e', nargs=1, type=str, metavar='ncfile', \
+            help='use existing particle output.', default=None)
     # parser.add_argument('-sd', nargs=1, metavar='#', type=float,\
     #         help='adds random noise as std. dev. to pyticle velocities.')
     parser._optionals.title = 'optional flag arguments'
@@ -104,435 +108,11 @@ def parseArgs():
     return args
 
 
-def plotTracks(row, pytkl, drift, ncfile, tideNorm, sim, loc, args, saveplot):
-    """
-    Plots the tracks of the two objects.
-    """
-    # check whether or not to overwrite
-    savename = row[0][:-4] + '_plot.png'
-
-    if args.s and not args.o:
-        if osp.exists(saveplot + savename):
-             return
-
-    if args.v:
-        print 'preparing to create color map...'
-    fig = createColorMap(ncfile, tideNorm[0,:], mesh=False, \
-            title = 'Pyticle Track for ' + row[0][:-4],
-                        label = 'Mean Velocity Norm (m/s)')
-
-    # add scatter plots of data
-    lon = pytkl.variables['lon'][:]
-    lat = pytkl.variables['lat'][:]
-    if args.v:
-        print 'adding scatter plot...'
-    pytkl_path = plt.scatter(lon, lat, c='m', lw=0, alpha=0.6, marker="^", s=10)
-
-    lonD = drift.Variables.lon
-    latD = drift.Variables.lat
-    drift_path = plt.scatter(lonD, latD, c='k', lw=0, s=25)
-
-    plt.legend([drift_path, pytkl_path],['Drifter', 'Model'])
-
-    if args.s:
-        if args.v:
-            print 'creating save directory...'
-        if not osp.exists(saveplot):
-             os.makedirs(saveplot)
-        plt.savefig(saveplot + savename)
-
-    else:
-        plt.show()
-
-    plt.close(fig)
-
-
 def analyseTracks(pytkl, drift, ncfile, sim, loc, row, args):
     """
     Runs a bunch of statistics on the two tracks.
     """
     pass
-
-
-def geographicError(pytkl, drift, ncfile, sim, loc, row, args, \
-                    saveplot, tn=None):
-    """
-    Calculates errors in lon/lat coordinates and velocities graphically.
-
-    pytkl :: pyticle object
-    ncfile :: FVCOM mode
-    drift :: drifter data
-    sim :: sim date
-    loc :: sim location
-    row :: drifter file name
-    args :: command line args
-    saveplot :: name of save plot dir
-    tn :: optional tideNorm, prints side by side
-    """
-    # check whether or not to overwrite
-    savename = row[0][:-4] + '_lonlatErr.png'
-
-    if args.s and not args.o:
-        if osp.exists(saveplot + savename):
-             return
-
-    if args.v:
-        print 'calculating lon/lat error...'
-    lon = np.array(pytkl.variables['lon'][:])
-    lat = np.array(pytkl.variables['lat'][:])
-    lonD = drift.Variables.lon
-    latD = drift.Variables.lat
-    uD = drift.Variables.u
-    vD = drift.Variables.v
-    u = np.array(pytkl.variables['u'][:])
-    v = np.array(pytkl.variables['v'][:])
-
-    dtime = drift.Variables.matlabTime
-    ptime = mjd2num(pytkl.variables['time'][:])
-
-    if args.v:
-        print str(lon.shape[1]) + ' pyticles...'
-        print 'no. pts pytkl: ' + str(len(lon))
-        print 'no. pts drift: ' + str(len(lonD))
-        print 'broadcasting...'
-
-    # truncate longer list to broadcast
-    if len(lon) > len(lonD):
-        idx = broadcast(ptime, dtime)
-        lon = lon[idx]
-        lat = lat[idx]
-        u = u[idx]
-        v = v[idx]
-        ptime = ptime[idx]
-    elif len(lonD) > len(lon):
-        idx = broadcast(dtime, ptime)
-        dtime = dtime[idx]
-        lonD = lonD[idx]
-        latD = latD[idx]
-        uD = uD[idx]
-        vD = vD[idx]
-
-    dtime = [dn2dt(x) for x in dtime]
-    ptime = [dn2dt(x) for x in ptime]
-
-    # if multiple particles, take the mean
-    if len(lon.shape) > 1:
-        lonErr = np.squeeze(np.array([np.abs(row-lonD) for row in lon.T])).T
-        latErr = np.squeeze(np.array([np.abs(row-latD) for row in lat.T])).T
-        uErr = np.squeeze(np.array([np.abs(row-uD) for row in u.T])).T
-        vErr = np.squeeze(np.array([np.abs(row-vD) for row in v.T])).T
-
-        lonDiff = np.mean(lonErr, axis=1)
-        latDiff = np.mean(latErr, axis=1)
-        uDiff = np.mean(uErr, axis=1)
-        vDiff = np.mean(vErr, axis=1)
-        lab1 = ['Mean Lon. Diff.', 'Mean Lat. Diff.']
-        lab2 = ['Mean u Diff.', 'Mean v Diff.']
-    else:
-        lonDiff = np.abs(lonD - lon)
-        latDiff = np.abs(latD - lat)
-        uDiff = np.abs(uD - u)
-        vDiff = np.abs(vD - v)
-        lab1 = ['Lon. Diff.', 'Lat. Diff.']
-        lab2 = ['u Diff.', 'v Diff.']
-
-    if tn != None:
-        ## **Needs work done to ensure proper scaling of subplots on figure!
-        where1 = 221
-        where2 = 223
-        fig = createColorMap(ncfile, tn[0,:], mesh=False, \
-                title='Trajectory for {}'.format(row[0][:-4]), \
-                label='Mean Velocity Norm (m/s)')
-        fig.suptitle('Positional Timeseries :: ' + \
-                 'BFRIC={} | Filename={}'.format(str(bfric), row[0][:-4]),
-                 fontsize=10)
-        plt.scatter(lon, lat)
-        plt.scatter(lonD, latD)
-    else:
-        fig = plt.figure()
-        where1 = 211
-        where2 = 212
-
-    if args.v:
-        print 'creating figures...'
-    result, axis = plotTimeSeries(fig, (ptime, dtime), (lonDiff, latDiff), loc, \
-            label=lab1, where=where1, \
-            title='Longitudal/Latitudal Timeseries Error', \
-            axis_label='Lon/Lat Error ($^\circ$)', styles=['#1DA742','#900C3F'], \
-            debug=True, legend=True)
-
-    if not result:
-        sys.exit('error plotting longitudal/latitudal data.')
-
-    result, axis = plotTimeSeries(fig, (ptime, dtime), (uDiff, vDiff), loc, \
-            label=lab2, where=where2, \
-            title='u/v-Velocity Timeseries Error', \
-            axis_label='u/v-Velocity Error (m/s)', styles=['#FFC300','#581845'], \
-            axx=axis, debug=True, legend=True)
-
-    if not result:
-        sys.exit('error plotting velocity data.')
-
-##    result, axis = plotTimeSeries(fig, (ptime, dtime), (lon, lonD), loc, \
-##            label=lab, where=where1, \
-##            title='Longitudal Timeseries Comparison', \
-##            axis_label='Longitude ($^\circ$)', styles=['#1DA742','#900C3F'], \
-##            debug=True, legend=leg)
-##
-##    if not result:
-##        sys.exit('error plotting longitudal data.')
-##
-##    result, axis = plotTimeSeries(fig, (ptime, dtime), (lat, latD), loc, \
-##            label=['Model Drifter','Observed Drifter'], where=where2, \
-##            title='Latitudal Timeseries Comparison', \
-##            axis_label='Latitude ($^\circ$)', styles=['#FFC300','#581845'], \
-##            axx=axis, debug=True, legend=leg)
-##
-##    if not result:
-##        sys.exit('error plotting latitudal data.')
-
-    if args.s:
-        if args.v:
-            print 'creating save directory...'
-        if not osp.exists(saveplot):
-             os.makedirs(saveplot)
-        plt.savefig(saveplot + savename)
-
-    else:
-        plt.show()
-
-    plt.close(fig)
-
-
-def boxplotError(pytkl, drift, ncfile, sim, loc, row, args, saveplot):
-    """
-    Plots a box plot for each model-drifter time series error.
-    """
-    # check whether or not to overwrite
-    savename = row[0][:-4] + '_lonlatErr.png'
-
-    if args.s and not args.o:
-        if osp.exists(saveplot + savename):
-             return
-
-    if args.v:
-        print 'calculating lon/lat error...'
-    lon = np.array(pytkl.variables['lon'][:])
-    lat = np.array(pytkl.variables['lat'][:])
-    lonD = drift.Variables.lon
-    latD = drift.Variables.lat
-    uD = drift.Variables.u
-    vD = drift.Variables.v
-    u = np.array(pytkl.variables['u'][:])
-    v = np.array(pytkl.variables['v'][:])
-
-    dtime = drift.Variables.matlabTime
-    ptime = mjd2num(pytkl.variables['time'][:])
-
-    if args.v:
-        print str(lon.shape[1]) + ' pyticles...'
-        print 'no. pts pytkl: ' + str(len(lon))
-        print 'no. pts drift: ' + str(len(lonD))
-        print 'broadcasting...'
-
-    # truncate longer list to broadcast
-    if len(lon) > len(lonD):
-        idx = broadcast(ptime, dtime)
-        lon = lon[idx]
-        lat = lat[idx]
-        u = u[idx]
-        v = v[idx]
-        ptime = ptime[idx]
-    elif len(lonD) > len(lon):
-        idx = broadcast(dtime, ptime)
-        dtime = dtime[idx]
-        lonD = lonD[idx]
-        latD = latD[idx]
-        uD = uD[idx]
-        vD = vD[idx]
-
-    dtime = [dn2dt(x) for x in dtime]
-    ptime = [dn2dt(x) for x in ptime]
-
-    if len(lon.shape) > 1:
-        lonErr = np.squeeze(np.array([np.abs(row-lonD) for row in lon.T])).T
-        latErr = np.squeeze(np.array([np.abs(row-latD) for row in lat.T])).T
-        uErr = np.squeeze(np.array([np.abs(row-uD) for row in u.T])).T
-        vErr = np.squeeze(np.array([np.abs(row-vD) for row in v.T])).T
-
-    if args.v:
-        print 'creating figure...'
-    # PANDAS? PYLAB?
-    # Is the error normal??
-    fig = plt.figure()
-    ax1 = fig.add_subplot(211)
-    bp = ax1.boxplot(lonErr, showmeans=True, patch_artist=True)
-    for box in bp['boxes']:
-        box.set(color='#1C2833',linewidth=2)
-        box.set(facecolor='lightblue', alpha=1)
-    for whisker in bp['whiskers']:
-        whisker.set(color='#1C2833', linewidth=2)
-    for cap in bp['caps']:
-        cap.set(color='#1C2833', linewidth=2)
-    for median in bp['medians']:
-        median.set(color='#1C2833')
-    for flier in bp['fliers']:
-        flier.set(marker='+')
-        flier.set(color='k', alpha=0.5)
-    for mean in bp['means']:
-        mean.set(marker='o')
-        mean.set(color='k')
-    ax1.set_ylabel('Longitudal Error')
-    ax1.set_title('Particle-Drifter Error')
-
-    ax2 = fig.add_subplot(212)
-    bp = ax2.boxplot(lonErr, showmeans=True, patch_artist=True)
-    for box in bp['boxes']:
-        box.set(color='#1C2833',linewidth=2)
-        box.set(facecolor='lightblue', alpha=1)
-    for whisker in bp['whiskers']:
-        whisker.set(color='#1C2833', linewidth=2)
-    for cap in bp['caps']:
-        cap.set(color='#1C2833', linewidth=2)
-    for median in bp['medians']:
-        median.set(color='#1C2833')
-    for flier in bp['fliers']:
-        flier.set(marker='+')
-        flier.set(color='k', alpha=0.5)
-    for mean in bp['means']:
-        mean.set(marker='o')
-        mean.set(color='k')
-    ax2.set_xlabel('Particle Label')
-    ax2.set_ylabel('Latitudal Error')
-
-    if args.s:
-        if args.v:
-            print 'creating save directory...'
-        if not osp.exists(saveplot):
-             os.makedirs(saveplot)
-        plt.savefig(saveplot + savename)
-
-    else:
-        plt.show()
-
-    plt.close(fig)
-
-
-def spatialProbability(pytkl, drift, ncfile, sim, loc, row, args, saveplot):
-    """
-    Creates a color-varying spatial plot of the model drifters.
-    """
-    # check whether or not to overwrite
-    savename = row[0][:-4] + '_prob.png'
-
-    if args.s and not args.o:
-        if osp.exists(saveplot + savename):
-             return
-
-    if args.v:
-        print 'calculating domain frequencies...'
-    elems = np.array(pytkl.variables['indomain'][:])
-
-    # calculate spatial probability density
-    # count the number of occurrences of elements
-    freq = np.zeros(ncfile.Grid.nele)
-    idx, cnt = np.unique(elems, return_counts=True)
-    freq[idx] = np.log(cnt)
-
-    # freq = freq.normalize(freq[:,np.newaxis], axis=0).ravel()
-    fig = createColorMap(ncfile, freq/np.amax(freq), mesh=False, \
-            label = "Log Probability of Model Drifter Transit",
-            title = "Spatially-Varying Probability Plot of Model Drifter\n" + \
-            'BFRIC={} | Filename={}'.format(str(bfric), row[0][:-4]))
-
-    plt.scatter(drift.Variables.lon, drift.Variables.lat, c='k', lw=0)
-
-    if args.s:
-        if args.v:
-            print 'creating save directory...'
-        if not osp.exists(saveplot):
-             os.makedirs(saveplot)
-        plt.savefig(saveplot + savename)
-
-    else:
-        plt.show()
-
-    plt.close(fig)
-
-
-def dispersionPlots(pytkl, drift, ncfile, sim, loc, row, args, saveplot):
-    """
-    Plots mean long./lat. and relative displacement of the pyticles
-    against time, with a 95% confidence interval.
-    """
-    # check whether or not to overwrite
-    savename = row[0][:-4] + '_disp.png'
-
-    if args.s and not args.o:
-        if osp.exists(saveplot + savename):
-             return
-
-    if args.v:
-        print 'collecting lon/lats...'
-    lon = np.array(pytkl.variables['lon'][:])
-    lat = np.array(pytkl.variables['lat'][:])
-    lonD = drift.Variables.lon
-    latD = drift.Variables.lat
-
-    dtime = drift.Variables.matlabTime
-    ptime = mjd2num(pytkl.variables['time'][:])
-    dtime = [dn2dt(x) for x in dtime]
-    ptime = [dn2dt(x) for x in ptime]
-
-    if args.v:
-        print str(lon.shape[1]) + ' pyticles...'
-        print 'no. pts pytkl: ' + str(len(lon))
-        print 'no. pts drift: ' + str(len(lonD))
-
-    if args.v:
-        print 'calculating statistics...'
-    lonM = np.mean(lon, axis=1)
-    latM = np.mean(lat, axis=1)
-    lonSD = np.std(lon, axis=1)
-    latSD = np.std(lat, axis=1)
-
-    dlonM = lonM - lonM[0]
-    dlatM = latM - latM[0]
-
-    disp = np.sqrt(np.square(dlonM*79868) + np.square(dlatM*111117))
-    dispSD = np.sqrt(np.square(lonSD*79868) + np.square(latSD*111117))
-
-    t = sp.stats.t.ppf(0.95, len(lonM)-1)
-    CI = t*dispSD
-
-    # plotting
-    if args.v:
-        print 'creating plot...'
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-    ax.plot(ptime, disp,'o', color='#34495E', markersize=5, markeredgewidth=1,\
-            markeredgecolor='#2E4053', markerfacecolor='#34495E')
-    ax.fill_between(ptime, disp+CI, disp-CI, color='#F39C12', edgecolor='')
-    # minor hack for labelling CI
-    ax.plot(ptime, disp+CI, color='#F39C12', label='95% Confidence Interval')
-    ax.set_ylabel('Displacement (m)')
-    ax.set_xlabel('Time (HH:MM:SS)')
-    ax.set_title('Dispersion of Pyticles')
-    plt.gcf().autofmt_xdate()
-    plt.grid(True)
-    plt.tight_layout()
-    plt.ylim(0, np.max(disp)+np.max(dispSD))
-
-    if args.s:
-        if args.v:
-            print 'creating save directory...'
-        if not osp.exists(saveplot):
-             os.makedirs(saveplot)
-        plt.savefig(saveplot + savename)
-    else:
-        plt.show()
-
-    plt.close(fig)
 
 
 if __name__ == '__main__':
@@ -592,7 +172,7 @@ if __name__ == '__main__':
                 if args.f[0] != 1:
                     outpath += '_f{}'.format(args.f[0])
 
-           outpath += '/'
+            outpath += '/'
 
             if not osp.exists(outpath):
                 os.makedirs(outpath)
@@ -619,10 +199,6 @@ if __name__ == '__main__':
             if args.v:
                 print 'opening fvcom file...'
             ncfile = FVCOM(filename, debug=False)
-            if args.v:
-                print 'calculating ebb/flood split at centre of location...'
-            fI, eI, _, _ = ncfile.Util2D.ebb_flood_split_at_point(centre[0], \
-                            centre[1])
             if args.v:
                 print 'calculating model velocity norm...'
             ncfile.Util3D.velo_norm()
@@ -716,7 +292,10 @@ if __name__ == '__main__':
                 win2 = (np.abs(tModel - tPytkl.max())).argmin()
 
                 # calculate time norm
-                tideNorm = np.mean(ncfile.Variables.velo_norm[win1:win2,:,:], 0)
+                if win1 == win2:
+                    tideNorm = np.mean(ncfile.Variables.velo_norm[win1,:,:], 0)
+                else:
+                    tideNorm = np.mean(ncfile.Variables.velo_norm[win1:win2,:,:],0)
                 if args.v:
                     print 'opening drifter file...'
                 drift = Drifter(path2drift + row[0], debug=False)
@@ -732,7 +311,7 @@ if __name__ == '__main__':
                         save += '_t'
                     if args.w:
                         save += '_w{}'.format(args.w[0])
-                         if args.f[0] != 1:
+                        if args.f[0] != 1:
                             save += '_ff{}'.format(args.f[0])
 
                     if save[-1] != '/':
@@ -750,23 +329,28 @@ if __name__ == '__main__':
                         if args.f[0] != 1:
                             save += '_ff{}'.format(args.f[0])
 
-                   save += '/'
+                    save += '/'
 
                     if 1 in args.p:
-                        plotTracks(row, pytkl, drift, ncfile, tideNorm, sim, \
-                                    loc, args, save)
+                        plotTracks(pytkl, drift, ncfile, row[0][:-4], tideNorm, \
+                                    sim, loc, save=args.s, write=args.o, \
+                                    verbose=args.v, saveplot=save)
                     if 2 in args.p:
-                        geographicError(pytkl, drift, ncfile, sim, loc, row, \
-                                    args, save)
+                        geographicError(pytkl, drift, ncfile, row[0][:-4], \
+                                    sim, loc, save=args.s, write=args.o, \
+                                    verbose=args.v, saveplot=save)
                     if 3 in args.p:
-                        spatialProbability(pytkl, drift, ncfile, sim, loc, \
-                                    row, args, save)
-                    if 4 in args.p:
-                        dispersionPlots(pytkl, drift, ncfile, sim, loc, \
-                                    row, args, save)
-                    if 5 in args.p:
-                        boxplotError(pytkl, drift, ncfile, sim, loc, row, args, \
-                                    save)
+                        spatialProbability(pytkl, drift, ncfile, row[0][:-4], \
+                                    sim, loc, save=args.s, write=args.o, \
+                                    verbose=args.v, saveplot=save)
+                   if 4 in args.p:
+                        dispersionPlots(pytkl, drift, ncfile, row[0][:-4], \
+                                    sim, loc, save=args.s, write=args.o, \
+                                    verbose=args.v, saveplot=save)
+                   if 5 in args.p:
+                        boxplotError(pytkl, drift, ncfile, row[0][:-4], \
+                                    sim, loc, save=args.s, write=args.o, \
+                                    verbose=args.v, saveplot=save)
 
                 if args.a:
                     analyseTracks(pytkl,drift,ncfile,sim,loc,row,args)
