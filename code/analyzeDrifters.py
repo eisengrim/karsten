@@ -67,6 +67,8 @@ def parseArgs():
     # option to write initial positions
     parser.add_argument("--write", '-w', help='records initial positions of ' \
             + 'drifters to .dat file.', action="store_true")
+    parser.add_argument('--tide', '-t', help='adds tidal option', nargs=1, \
+            choices=('ebb', 'flood', None), default=None)
 
     args = parser.parse_args()
 
@@ -141,7 +143,9 @@ def setOptions(args):
     elif args.debug:
         print '\tnc files found.'
 
-    return args.loc[0], sim_path, obs_dir, matfiles
+    tide = args.tide[0]
+
+    return args.loc[0], sim_path, obs_dir, matfiles, tide
 
 
 if __name__ == '__main__':
@@ -153,12 +157,12 @@ if __name__ == '__main__':
     args = parseArgs()
     debug = args.debug
 
-    loc, sim_path, obs_dir, obs_files = setOptions(args)
+    loc, sim_path, obs_dir, obs_files, tide = setOptions(args)
 
     if debug:
         print '\n--parameters selected--'
         print 'location: ', loc, '\nsim_path: ', sim_path, \
-                '\nobs_path: ', obs_dir
+                '\nobs_path: ', obs_dir, '\ntide: ', str(tide)
 
     # initialize cumulative data arrays
     drifters = {}
@@ -213,7 +217,7 @@ if __name__ == '__main__':
 
         drift, mean, std, speedO, speedS, uspdO, uspdS, bias, lat, lon, \
             lon0, lat0, ubias, depth, erru, errv, err_mag, err_dir, avg_d \
-            = calculateBias(ncfile, files, loc, debug=debug)
+            = calculateBias(ncfile, files, loc, tide_opt=tide, debug=debug)
 
         if debug:
             print 'adding to cumulative data...'
@@ -267,6 +271,7 @@ if __name__ == '__main__':
            + '\nuspdS, \nlat, \nlon, \ndepth, \nerru, \nerrv, \nerr_mag, ' \
            + '\nerr_dir'
     print 'all individul data is encased within the dictionary \'drifters\''
+    print 'only drifters for ' + str(tide) + ' are given.'
 
     # write init loc data to text file
     if args.write:

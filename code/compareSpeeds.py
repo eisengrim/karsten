@@ -132,6 +132,7 @@ def createPlots(ncfile, files, loc, savepath, sim_name, bfric, tight=False, \
         if debug:
             print 'creating drifter object...'
         drift = Drifter(fname, debug=False)
+        fname = fname[48:-4]
 
         # creates drifter object window for flow map
         if debug:
@@ -152,20 +153,10 @@ def createPlots(ncfile, files, loc, savepath, sim_name, bfric, tight=False, \
         if debug:
             print 'preparing to create colormap...'
         fig = createColorMap(ncfile, tideNorm[0,:], mesh=False, bounds=bounds, \
-            title='Mean Velocity Norm During '+tide.capitalize()+' Tide', \
-            label='Mean Velocity Norm (m/s)', debug=debug)
+                title='Trajectory for ' + fname[:-4], debug=debug, \
+                label='Mean Velocity Norm during '+tide.capitalize()+' Tide (m/s)')
         # create title
-        fig.suptitle('Data from ' + fname, fontsize=14)
-
-        # create validation structure
-        if debug:
-            print 'creating validation object...'
-
-        try:
-            valid = Validation(drift, ncfile, flow='sf', debug=False)
-        except IndexError:
-            print 'cannot create validation object for drifter %i.' % i
-            continue
+        # fig.suptitle('Data from ' + fname[:-4], fontsize=14)
 
         x = drift.Variables.lon
         y = drift.Variables.lat
@@ -178,6 +169,16 @@ def createPlots(ncfile, files, loc, savepath, sim_name, bfric, tight=False, \
 
         if debug:
             print 'preparing to plot time series...'
+
+        # create validation structure
+        if debug:
+            print 'creating validation object...'
+
+        try:
+            valid = Validation(drift, ncfile, flow='sf', debug=False)
+        except IndexError:
+            print 'cannot create validation object for drifter %i.' % i
+            continue
 
         # calculate speed from interpolated and observed date
         mTimes = valid.Variables.struct['mod_time']
@@ -197,19 +198,22 @@ def createPlots(ncfile, files, loc, savepath, sim_name, bfric, tight=False, \
         speedS = speedS * ratio
         datetimes = np.asarray([dn2dt(time) for time in mTimes])
 
-        result, axis = plotTimeSeries(fig, np.reshape(np.tile(datetimes,2),\
-                (2, len(datetimes))), np.vstack((speedS, speedO)), \
-                loc, label=['Simulated','Observed'], where=121, \
-                title='Observed, Simulated Speed-Time Plot for BFRIC={}'\
-                .format(bfric), \
-                axis_label='Speed (m/s)', debug=False)
+        # For now, separate the two plots.
+        # Set BFRIC for now
+        # WHAT IS WRONG WITH THIS
+        # fig2=plt.figure()
+        # result, axis = plotTimeSeries(fig2, np.reshape(np.tile(datetimes,2),\
+        #         (2, len(datetimes))), np.vstack((speedS, speedO)), \
+        #         loc, label=['Simulated','Observed'], where=111, \
+        #         title='Path Speeds for ' + fname[:-4] + ' |  BFRIC=0.015', \
+        #         axis_label='Speed (m/s)')
 
-        if not result:
-            if debug:
-                print '...error encountered with drifter {}.'.format(i)
-                print 'continuing...'
-            plt.clf()
-            continue
+        # if not result:
+        #     if debug:
+        #         print '...error encountered with drifter {}.'.format(i)
+        #         print 'continuing...'
+        #     plt.close()
+        #     continue
 
         if plot:
             if debug:
@@ -218,17 +222,13 @@ def createPlots(ncfile, files, loc, savepath, sim_name, bfric, tight=False, \
         else:
             if debug:
                 print 'saving plot...'
-            savename = loc + '_' + sim_name + '_' + GRID + '_d' + str(i) + '.png'
-
-            print savepath
-            print savename
-            plt.savefig(savepath + savename)
-
+            fig.savefig(savepath + fname + '_traj.png')
+            # result.savefig(savepath + fname + '_speed.png')
             if debug:
-                print '...plot saved to: ', savepath+savename
+                print '...plot saved to: ', savepath+fname
 
         # clear the figure window
-        plt.clf()
+        plt.close()
 
 
 def parseArgs():
@@ -349,7 +349,7 @@ def setOptions(args):
         print 'looking for fvcom directory...'
 
     if args.bfric:
-        path2sim = PATH_TO_SIM + 'BFRIC_' + args.bfric + '/'
+        path2sim = PATH_TO_SIM + 'BFRIC_' + args.bfric[0] + '/'
 
     # hacky fix to an odd bug
     if args.dir[0][-1] == ':':
@@ -439,8 +439,11 @@ if __name__ == '__main__':
     else:
         plot=True
 
-    createPlots(ncfile, files, loc, savepath, args_dir, args.bfric, \
-            debug=debug, plot=plot, tight=tight, ratio=args.ratio)
+    createPlots(ncfile, files, loc, savepath, args_dir, args.bfric[0], \
+            debug=debug, \
+            plot=plot, \
+            tight=tight, \
+            ratio=args.ratio)
 
     plt.close()
     if debug:

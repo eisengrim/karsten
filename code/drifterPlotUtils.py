@@ -3,7 +3,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats.stats import pearsonr
-
+from matplotlib.dates import DateFormatter
 from drifterUtils import dn2dt
 
 
@@ -176,6 +176,43 @@ def spatialRatios(model, lon, lat, uspdO, uspdS, debug=False):
         print '\tcreating color bar...'
 
 
+def spatialError(model, lon, lat, uspdO, uspdS, debug=False):
+    """
+    Creates a spatially-varying plot of the errors.
+    """
+    if debug:
+        print '\tstarting spatial plot...'
+    glon = model.Grid.lon
+    glat = model.Grid.lat
+    if debug:
+        print '\tcomputing bounding boxes...'
+    bounds = [np.min(glon), np.max(glon), np.min(glat), np.max(glat)]
+
+    if debug:
+        print '\tcomputing colors...'
+
+    speedErr = np.abs(uspdO - uspdS)
+
+    if debug:
+        print '\tcreating map...'
+        print '\tcreating scatter plot...'
+	f=plt.figure()
+	ax = f.add_axes([.125,.1,.775,.8])
+	ax.triplot(glon, glat, model.Grid.trinodes, zorder=10, lw=10)
+	clim=np.percentile(speedErr,[5,95])
+    if debug:
+        print '\tcreating color bar...'
+	cb = ax.scatter(lon, lat, c=speedErr, s=10, edgecolor='None', \
+            vmin=clim[0], vmax=clim[1], zorder=20)
+    if debug:
+        print '\tfinalizing...'
+    plt.colorbar(cb)
+    if debug:
+        print '\tcreating color bar...'
+
+    return f
+
+
 def plotTimeSeries(fig, dt, var, loc, label=['',''], title='', bg='#f5deb3', \
                 styles=['b--', '#8B0000'], axis_label='', where=121, axx=None, \
                 axy=None, legend=True, debug=False):
@@ -233,12 +270,15 @@ def plotTimeSeries(fig, dt, var, loc, label=['',''], title='', bg='#f5deb3', \
     if legend:
         leg = ax.legend(loc='best')
         for lab in leg.get_texts():
-            lab.set_fontsize('small')
+            lab.set_fontsize(12)
         for lab in leg.get_lines():
             lab.set_linewidth(1)
 
     # set the axis limits (hardcoded for consistency)
     # ax2.set_ylim(0.0, 3.0)
+    fomt = DateFormatter('%H:%M:%S')
+    plt.gca().xaxis_date()
+    plt.gca().get_xaxis().set_major_formatter(fomt)
     plt.gcf().autofmt_xdate()
     plt.grid(True)
     plt.tight_layout()

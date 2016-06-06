@@ -72,7 +72,7 @@ def compareBFRIC(drift, debug=False):
     pass
 
 
-def calculateBias(ncfile, files, loc, debug=False):
+def calculateBias(ncfile, files, loc, tide_opt=None, debug=False):
     """
     Compiles necessary data, calculates individual biases and
     takes the mean and standard deviation. Also calculates the
@@ -83,6 +83,7 @@ def calculateBias(ncfile, files, loc, debug=False):
         - ncfile : FVCOM object
         - files : list of matlab filenames in directory
         - loc : location tag
+        - tide_opt : 'ebb' or 'flood' ... returns only drifter data for tide
         - sim_name : name of simulation directory used
     """
 
@@ -118,12 +119,21 @@ def calculateBias(ncfile, files, loc, debug=False):
     mlatc = ncfile.Grid.latc
 
     for i, fname in enumerate(files, start=1):
-        drifters[fname[48:]] = {}
+        drifters[fname[48:-4]] = {}
         if debug:
             print 'creating drifter object {}...'.format(i)
             print fname
 
         drift = Drifter(fname, debug=False)
+
+        # tests tide condition
+        if tide_opt is not None:
+            tide = str(drift.Data['water_level'].tide)
+            if tide != tide_opt:
+                if debug:
+                    print fname + ' not in tide selection'
+                continue
+
         # create validation structure
         if debug:
             print '\tcreating validation object...'
@@ -173,8 +183,8 @@ def calculateBias(ncfile, files, loc, debug=False):
         err_dir = np.arctan(np.divide(errv, erru))/np.pi * 180
 
         # info on # of data this drifter has and other individual data
-        drifters[fname[48:]]['filename'] = fname[48:]
-        fname = fname[48:]
+        drifters[fname[48:-4]]['filename'] = fname[48:-4]
+        fname = fname[48:-4]
         drifters[fname]['num'] = i
         drifters[fname]['(start, stop)'] = (data_count,data_count+len(olon)-1)
         data_count += len(olon)
@@ -216,7 +226,7 @@ def calculateBias(ncfile, files, loc, debug=False):
             wind = fname.split('.')[0].split('_')[-1]
         else:
             if debug:
-                print 'no wind speed...'
+                print '\tno wind speed...'
             wind = '0'
         drifters[fname]['wind_speed'] = wind
 
@@ -242,8 +252,11 @@ def calculateBias(ncfile, files, loc, debug=False):
         o_lon.extend(olon)
         o_lat.extend(olat)
 
+    if tide_opt is not None:
+        print 'all drifters for ' + tide_opt + ' selected...'
+
     return drifters, all_mean, all_sdev, obs_speed, mod_speed, obs_uspeed, \
          mod_uspeed, all_bias, o_lat, o_lon, lon0, lat0, all_ubias, depths, \
-         erru, errv, all_err_mag, all_err_dir, mean_depth
+         all_erru, all_errv, all_err_mag, all_err_dir, mean_depth
 
 
