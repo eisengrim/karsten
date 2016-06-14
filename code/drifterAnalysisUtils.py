@@ -7,6 +7,29 @@ import scipy.special as sps
 # local imports
 from drifterUtils import dn2dt
 
+
+def computeTideNorms(model, pytkl):
+    """
+    *Run after initializeFVCOM.py*
+
+    **add drifter computation
+
+    model :: FVCOM model
+    pytkl :: pytkl object
+    """
+    model.Util3D.velo_norm()
+    tmodel = model.Variables.julianTime
+    tpytkl = pytkl.variables['time'][:]
+    win1 = (np.abs(tmodel-tpytkl.min())).argmin()
+    win2 = (np.abs(tmodel-tpytkl.max())).argmin()
+    if win1 == win2:
+        tideNorm = np.mean(model.Variables.velo_norm[win1,:,:], 0)
+    else:
+        tideNorm = np.mean(model.Variables.velo_norm[win1:win2,:,:], 0)
+
+    return tideNorm
+
+
 def cubeRatio(uspdO, uspdS, debug=False, plot=False):
     """
     Estimates the cubed-ratio and returns it.

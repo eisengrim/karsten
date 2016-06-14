@@ -183,22 +183,24 @@ def geographicError(pytkl, drift, ncfile, dname, sim, loc, save=False, \
     if verbose:
         print 'creating figures...'
     result, axis = plotTimeSeries(fig, (ptime, dtime), (lonDiff, latDiff), loc, \
-            label=lab1, where=where1, \
+            label=lab1, where=111, \
             title='Longitudal/Latitudal Timeseries Error', \
-            axis_label='Lon/Lat Error ($^\circ$)', styles=['#1DA742','#900C3F'], \
+            axis_label='Lon/Lat Error ($^\circ$)', styles=['#FFC300','#581845'],\
             debug=True, legend=True)
+
+    # styles=['#1DA742','#900C3F'],
 
     if not result:
         sys.exit('error plotting longitudal/latitudal data.')
 
-    result, axis = plotTimeSeries(fig, (ptime, dtime), (uDiff, vDiff), loc, \
-            label=lab2, where=where2, \
-            title='u/v-Velocity Timeseries Error', \
-            axis_label='u/v-Velocity Error (m/s)', styles=['#FFC300','#581845'], \
-            axx=axis, debug=True, legend=True)
+    # result, axis = plotTimeSeries(fig, (ptime, dtime), (uDiff, vDiff), loc, \
+    #         label=lab2, where=where2, \
+    #         title='u/v-Velocity Timeseries Error', \
+    #         axis_label='u/v-Velocity Error (m/s)', styles=['#FFC300','#581845'], \
+    #         axx=axis, debug=True, legend=True)
 
-    if not result:
-        sys.exit('error plotting velocity data.')
+    # if not result:
+    #     sys.exit('error plotting velocity data.')
 
 ##    result, axis = plotTimeSeries(fig, (ptime, dtime), (lon, lonD), loc, \
 ##            label=lab, where=where1, \
