@@ -3,19 +3,7 @@
 """
 Parses netCDF4 data from FVCOM in a similar manner to tawe-telemac-utils.
 
-usage: python netCDF4.py bfric loc path2sim.nc path2vel/ path2out/ mesh
-
-loc - location tag; GP, MP, PP, DG
-bfric - bottom friction
-path2sim.nc - path to nc file
-path2vel/ - directory of interpolated velocities from runInterpAvg.py
-path2out/ - save directory
-mesh - mesh name, usually same as given in runInterpAvg.py
-
-old directories:
-PATH2SIM='/EcoII/acadia_uni/workspace/simulated/FVCOM/dngridCSR/drifter_runs/'
-PATH2VEL='/EcoII/acadia_uni/projects/drifters/swansea/vel_interp/'
-PATH2OUT='/EcoII/acadia_uni/projects/drifters/swansea/meshes/'
+usage: python netCDF4.py loc bfric sim
 """
 
 from __future__ import division
@@ -26,16 +14,26 @@ import netCDF4 as nc
 import sys, os
 import os.path as osp
 
+PATH2SIM='/EcoII/acadia_uni/workspace/simulated/FVCOM/dngridCSR/drifter_runs/'
+PATH2VEL='/EcoII/acadia_uni/projects/drifters/swansea/vel_interp/bfric_'
+PATH2OUT='/EcoII/acadia_uni/projects/drifters/swansea/meshes/'
+
 if __name__ == '__main__':
 
-    if len(sys.argv) != 7:
-        sys.exit('insufficient command line args.')
-    bfric = str(sys.argv[1])
-    loc = sys.argv[2]
-    filename = sys.argv[3]
-    dir_vel = sys.argv[4]
-    outpath = sys.argv[5]
-    mesh = loc + '_' + sys.argv[6]
+    loc = sys.argv[1]
+    sim = sys.argv[3]
+    bfric = str(sys.argv[2])
+
+    if loc not in ['GP', 'PP', 'DG']:
+        sys.exit('not a valid location tag.')
+    if bfric not in ['0.015', '0.012', '0.009']:
+        sys.exit('not a valid bottom friction.')
+
+    mesh = loc + '_' + sim
+    filename = PATH2SIM+'BFRIC_'+bfric+'/'+loc+'/'+sim+ \
+                '/output/subdomain_'+loc+'1_0001.nc'
+    dir_vel = PATH2VEL+bfric+'/'+mesh+'/'
+    outpath = PATH2OUT + mesh + '/'
 
     # loading netcdf file
     if not filename.endswith('.nc'):
