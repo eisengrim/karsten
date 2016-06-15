@@ -112,6 +112,7 @@ if __name__ == '__main__':
     print '\t\tsize of mean speed(s): {}'.format(vvarE.shape)
     del vvarE
 
+    print '\taveraging for w...'
     for node in xrange(nnode):
         wvarE[node] = np.mean(ncfile.Variables.w[ne_idx[node],:,:], axis=0)
     wvarE = np.squeeze([np.vstack(wvarE[i]) for i in xrange(nnode)])
@@ -127,6 +128,8 @@ if __name__ == '__main__':
 
     # clear structure to save some space
     del ncfile
+
+    print 'done.'
 
     # benefit of saving in matlab: you don't need to know original shape
     # try in pickle, numpy.save or netcdf4??
