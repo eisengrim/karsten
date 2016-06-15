@@ -1,5 +1,4 @@
 #! /usr/bin/python2.7
-
 """
 Parses netCDF4 data from FVCOM in a similar manner to tawe-telemac-utils.
 
@@ -25,6 +24,7 @@ from scipy.io import netcdf
 import netCDF4 as nc
 import sys, os
 import os.path as osp
+import h5py
 
 if __name__ == '__main__':
 
@@ -94,9 +94,20 @@ if __name__ == '__main__':
 
     print 'loading velocity files...'
     # deal with velocities
-    u = np.load(dir_vel+mesh+'_u.pkl', mmap_mode = 'r')
-    v = np.load(dir_vel+mesh+'_v.pkl', mmap_mode = 'r')
-    w = np.load(dir_vel+mesh+'_w.pkl', mmap_mode = 'r')
+    if os.exists(dir_vel+mesh+'_u.pkl'):
+        u = np.load(dir_vel+mesh+'_u.pkl', mmap_mode = 'r')
+        v = np.load(dir_vel+mesh+'_v.pkl', mmap_mode = 'r')
+        w = np.load(dir_vel+mesh+'_w.pkl', mmap_mode = 'r')
+    elif os.exists(dir_vel+mesh+'u.h5'):
+        h5f = h5py.File(dir_vel+mesh+'_u.h5', 'r')
+        u = np.array(h5f['u_interp'][:])
+        h5f.close()
+        h5f = h5py.File(dir_vel+mesh+'_v.h5', 'r')
+        v = np.array(h5f['v_interp'][:])
+        h5f.close()
+        h5f = h5py.File(dir_vel+mesh+'_w.h5', 'r')
+        w = np.array(h5f['w_interp'][:])
+        h5f.close()
 
     # flatten velocity arrays in all but time dim
     u = u.reshape(u.shape[0], -1).astype(object)

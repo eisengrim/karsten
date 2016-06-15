@@ -1,4 +1,19 @@
 #! /usr/bin/python2.7
+"""
+Linearly interpolates FVCOM grid velocities to nodes.
+
+Usage:
+    python runInterpAvg.py BF LOC PATH2SIM.nc SAVEDIR/ ELEMS/ MESH
+
+Example Inputs:
+PATH2SIM="/EcoII/acadia_uni/workspace/simulated/FVCOM/dngridCSR/drifter_runs/"
+LOC = 'GP'
+BF = '0.015'
+SAVEDIR = "/EcoII/acadia_uni/projects/drifters/swansea/vel_interp/"
+ELEMS = "/array/home/119865c/karsten/nearest_elems/"
+MESH = "2013_Aug_08_3D" <- whatever your mesh is named, usually date of run
+"""
+
 
 from pyseidon import *
 from interpolation_utils import *
@@ -7,22 +22,7 @@ import scipy as sp
 from scipy.io import netcdf
 import sys, os
 import os.path as osp
-
-"""
-Linearly interpolates FVCOM grid velocities to nodes.
-
-Usage:
-    python runInterpAvg.py BF LOC PATH2SIM.nc SAVEDIR/ ELEMS/ MESH
-
-Example Inputs:
-PATH2SIM = "/EcoII/acadia_uni/workspace/simulated/FVCOM/dngridCSR/drifter_runs/"
-LOC = 'GP'
-BF = '0.015'
-SAVEDIR = "/EcoII/acadia_uni/projects/drifters/swansea/vel_interp/"
-ELEMS = "/array/home/119865c/karsten/nearest_elems/"
-MESH = "2013_Aug_08_3D" <- whatever you want your mesh named, usually date of run
-"""
-
+import h5py
 
 if __name__ == '__main__':
     if len(sys.argv) == 7:
@@ -71,11 +71,12 @@ if __name__ == '__main__':
     uvarE = np.empty(nnode, dtype=object)
     vvarE = np.empty(nnode, dtype=object)
     wvarE = np.empty(nnode, dtype=object)
+    print 'shape of arrays: ', uvarE.shape
 
     savepath = savedir + 'bfric_' + bf + '/' + loc + '_' + mesh_name + '/'
 
     if osp.exists(savepath):
-        sys.exit('{} already saved.'.format(mesh_name))
+        sys.exit('{} savedir already created.'.format(mesh_name))
 
     print '\tcreating new subdirectory...'
     print '\t\tfiles will be placed in {}...'.format(mesh_name)
@@ -90,7 +91,10 @@ if __name__ == '__main__':
     print '\t\trestoring axes...'
     uvarE = np.swapaxes(uvarE, 0, 2)
     print '\t\tsaving as pickle...'
-    uvarE.dump(savepath + '_u.pkl')
+    h5f = h5py.File(savepath+'_u.h5', 'w')
+    h5f.create_dataset('u_interp', data=uvarE)
+    h5f.close()
+    # uvarE.dump(savepath + '_u.pkl')
     print '\tsize of mean speed(s): {}'.format(uvarE.shape)
     del uvarE
 
@@ -101,7 +105,10 @@ if __name__ == '__main__':
     print '\t\trestoring axes...'
     vvarE = np.swapaxes(vvarE, 0, 2)
     print '\t\tsaving as pickle...'
-    vvarE.dump(savepath + '_v.pkl')
+    h5f = h5py.File(savepath+'_v.h5', 'w')
+    h5f.create_dataset('v_interp', data=vvarE)
+    h5f.close()
+    # vvarE.dump(savepath + '_v.pkl')
     print '\t\tsize of mean speed(s): {}'.format(vvarE.shape)
     del vvarE
 
@@ -110,8 +117,11 @@ if __name__ == '__main__':
     wvarE = np.squeeze([np.vstack(wvarE[i]) for i in xrange(nnode)])
     print '\t\trestoring axes...'
     wvarE = np.swapaxes(wvarE, 0, 2)
+    h5f = h5py.File(savepath+'_w.h5', 'w')
+    h5f.create_dataset('w_interp', data=wvarE)
+    h5f.close()
     print '\t\tsaving as pickle...'
-    wvarE.dump(savepath + '_w.pkl')
+    # wvarE.dump(savepath + '_w.pkl')
     print '\t\tsize of mean speed(s): {}'.format(wvarE.shape)
     del wvarE
 
