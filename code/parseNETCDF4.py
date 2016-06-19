@@ -94,25 +94,48 @@ if __name__ == '__main__':
 
     print 'loading velocity files from {}{}'.format(dir_vel, mesh)
     # deal with velocities
+    print 'handling u velocity...'
     if osp.exists(dir_vel+mesh+'_u.pkl'):
         u = np.load(dir_vel+mesh+'_u.pkl', mmap_mode = 'r')
-        v = np.load(dir_vel+mesh+'_v.pkl', mmap_mode = 'r')
-        w = np.load(dir_vel+mesh+'_w.pkl', mmap_mode = 'r')
     elif osp.exists(dir_vel+mesh+'_u.h5'):
         h5f = h5py.File(dir_vel+mesh+'_u.h5', 'r')
         u = np.array(h5f['u_interp'][:])
         h5f.close()
+    # flatten velocity arrays in all but time dim -> takes too long!
+    # u = u.reshape(u.shape[0], -1).astype(object)
+    print 'saving u velocity...'
+    for t in xrange(nt):
+        np.savetxt(outfile+'.var1.t'+str(t)+'.txt', np.vstack((nodes, \
+                    u[t].flatten())).T, fmt='%i\t%f')
+    del u
+
+    print 'handling v velocity...'
+    if osp.exists(dir_vel+mesh+'_w.pkl'):
+        v = np.load(dir_vel+mesh+'_v.pkl', mmap_mode = 'r')
+    elif osp.exists(dir_vel+mesh+'_v.h5'):
         h5f = h5py.File(dir_vel+mesh+'_v.h5', 'r')
         v = np.array(h5f['v_interp'][:])
         h5f.close()
+    # v = v.reshape(v.shape[0], -1).astype(object)
+    print 'saving v velocity...'
+    for t in xrange(nt):
+        np.savetxt(outfile+'.var2.t'+str(t)+'.txt', np.vstack((nodes, \
+                v[t].flatten())).T, fmt='%i\t%f')
+    del v
+
+    print 'handling w velocity...'
+    if osp.exists(dir_vel+mesh+'_w.pkl'):
+        w = np.load(dir_vel+mesh+'_w.pkl', mmap_mode = 'r')
+    elif osp.exists(dir_vel+mesh+'_w.h5'):
         h5f = h5py.File(dir_vel+mesh+'_w.h5', 'r')
         w = np.array(h5f['w_interp'][:])
         h5f.close()
-
-    # flatten velocity arrays in all but time dim
-    u = u.reshape(u.shape[0], -1).astype(object)
-    v = v.reshape(v.shape[0], -1).astype(object)
-    w = w.reshape(w.shape[0], -1).astype(object)
+    # w = w.reshape(w.shape[0], -1).astype(object)
+    print 'saving w velocity...'
+    for t in xrange(nt):
+        np.savetxt(outfile+'.var3.t'+str(t)+'.txt', np.vstack((nodes, \
+                w[t].flatten())).T, fmt='%i\t%f')
+    del w
 
     nvars = 4
     var0 = 'Z'
@@ -164,16 +187,14 @@ if __name__ == '__main__':
                 .format(nvars, 0, var0, 1, var1, 2, var2, 3, var3)
         f.write(out_str)
 
-    print 'writing velocities...'
+    del h, zeta, x, y, depth, siglay, elems
+
+    print 'writing depth...'
     for t in xrange(nt):
         np.savetxt(outfile+'.var0.t'+str(t)+'.txt', np.vstack((nodes, z[t])).T, \
                    fmt='%i\t%f')
-        np.savetxt(outfile+'.var1.t'+str(t)+'.txt', np.vstack((nodes, u[t])).T, \
-                   fmt='%i\t%f')
-        np.savetxt(outfile+'.var2.t'+str(t)+'.txt', np.vstack((nodes, v[t])).T, \
-                   fmt='%i\t%f')
-        np.savetxt(outfile+'.var3.t'+str(t)+'.txt', np.vstack((nodes, w[t])).T, \
-                   fmt='%i\t%f')
+
+    del z
 
     print 'creating .ini file...'
     with open(outfile + '.ini', 'w') as f:
