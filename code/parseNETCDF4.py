@@ -97,44 +97,63 @@ if __name__ == '__main__':
     print 'handling u velocity...'
     if osp.exists(dir_vel+mesh+'_u.pkl'):
         u = np.load(dir_vel+mesh+'_u.pkl', mmap_mode = 'r')
+        pkl = True
+        h5 = False
+        # flatten velocity arrays in all but time dim -> takes too long!
+        # u = u.reshape(u.shape[0], -1).astype(object)
     elif osp.exists(dir_vel+mesh+'_u.h5'):
         h5f = h5py.File(dir_vel+mesh+'_u.h5', 'r')
-        u = np.array(h5f['u_interp'][:])
+        # u = np.array(h5f['u_interp'][:])
+        pkl = False
+        h5 = True
         h5f.close()
-    # flatten velocity arrays in all but time dim -> takes too long!
-    # u = u.reshape(u.shape[0], -1).astype(object)
+    else:
+        sys.exit('incorrect file type.')
+
     print 'saving u velocity...'
     for t in xrange(nt):
+        if pkl:
+            ut = u[t]
+        elif h5:
+            ut = np.array(h5f['u_interp'][t])
         np.savetxt(outfile+'.var1.t'+str(t)+'.txt', np.vstack((nodes, \
-                    u[t].flatten())).T, fmt='%i\t%f')
+                    ut.flatten())).T, fmt='%i\t%f')
     del u
 
     print 'handling v velocity...'
     if osp.exists(dir_vel+mesh+'_w.pkl'):
         v = np.load(dir_vel+mesh+'_v.pkl', mmap_mode = 'r')
+        # v = v.reshape(v.shape[0], -1).astype(object)
     elif osp.exists(dir_vel+mesh+'_v.h5'):
         h5f = h5py.File(dir_vel+mesh+'_v.h5', 'r')
-        v = np.array(h5f['v_interp'][:])
+        # v = np.array(h5f['v_interp'][:])
         h5f.close()
-    # v = v.reshape(v.shape[0], -1).astype(object)
     print 'saving v velocity...'
     for t in xrange(nt):
+        if pkl:
+            vt = v[t]
+        elif h5:
+            vt = np.array(h5f['v_interp'][t])
         np.savetxt(outfile+'.var2.t'+str(t)+'.txt', np.vstack((nodes, \
-                v[t].flatten())).T, fmt='%i\t%f')
+                vt.flatten())).T, fmt='%i\t%f')
     del v
 
     print 'handling w velocity...'
     if osp.exists(dir_vel+mesh+'_w.pkl'):
         w = np.load(dir_vel+mesh+'_w.pkl', mmap_mode = 'r')
+        # w = w.reshape(w.shape[0], -1).astype(object)
     elif osp.exists(dir_vel+mesh+'_w.h5'):
         h5f = h5py.File(dir_vel+mesh+'_w.h5', 'r')
-        w = np.array(h5f['w_interp'][:])
+        # w = np.array(h5f['w_interp'][:])
         h5f.close()
-    # w = w.reshape(w.shape[0], -1).astype(object)
     print 'saving w velocity...'
     for t in xrange(nt):
+        if pkl:
+            wt = w[t]
+        elif h5:
+            wt = np.array(h5f['w_interp'][t])
         np.savetxt(outfile+'.var3.t'+str(t)+'.txt', np.vstack((nodes, \
-                w[t].flatten())).T, fmt='%i\t%f')
+                wt.flatten())).T, fmt='%i\t%f')
     del w
 
     nvars = 4
