@@ -92,13 +92,13 @@ if __name__ == '__main__':
     elems = np.vstack((elems,elems,elems,elems,elems,elems)).reshape(-1,order='F')
     nodes = np.arange(npoin).astype(object)
 
-    print 'loading velocity files...'
+    print 'loading velocity files from {}{}'.format(dir_vel, mesh)
     # deal with velocities
-    if os.exists(dir_vel+mesh+'_u.pkl'):
+    if osp.exists(dir_vel+mesh+'_u.pkl'):
         u = np.load(dir_vel+mesh+'_u.pkl', mmap_mode = 'r')
         v = np.load(dir_vel+mesh+'_v.pkl', mmap_mode = 'r')
         w = np.load(dir_vel+mesh+'_w.pkl', mmap_mode = 'r')
-    elif os.exists(dir_vel+mesh+'u.h5'):
+    elif osp.exists(dir_vel+mesh+'_u.h5'):
         h5f = h5py.File(dir_vel+mesh+'_u.h5', 'r')
         u = np.array(h5f['u_interp'][:])
         h5f.close()
