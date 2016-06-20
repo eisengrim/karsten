@@ -97,46 +97,52 @@ if __name__ == '__main__':
     print 'handling u velocity...'
     if osp.exists(dir_vel+mesh+'_u.pkl'):
         u = np.load(dir_vel+mesh+'_u.pkl', mmap_mode = 'r')
-        pkl = True
-        h5 = False
+        # hacky fix to determine which slicing to use
+        p = True
+        h = False
         # flatten velocity arrays in all but time dim -> takes too long!
         # u = u.reshape(u.shape[0], -1).astype(object)
     elif osp.exists(dir_vel+mesh+'_u.h5'):
         h5f = h5py.File(dir_vel+mesh+'_u.h5', 'r')
         # u = np.array(h5f['u_interp'][:])
-        pkl = False
-        h5 = True
-        h5f.close()
+        p = False
+        h = True
     else:
         sys.exit('incorrect file type.')
 
-    print 'saving u velocity...'
-    for t in xrange(nt):
-        if pkl:
-            ut = u[t]
-        elif h5:
-            ut = np.array(h5f['u_interp'][t])
-        np.savetxt(outfile+'.var1.t'+str(t)+'.txt', np.vstack((nodes, \
-                    ut.flatten())).T, fmt='%i\t%f')
-    del u
+    # save to file
+    print 'saving to files...'
+    if not osp.exists(outpath):
+        os.makedirs(outpath)
 
-    print 'handling v velocity...'
-    if osp.exists(dir_vel+mesh+'_w.pkl'):
-        v = np.load(dir_vel+mesh+'_v.pkl', mmap_mode = 'r')
-        # v = v.reshape(v.shape[0], -1).astype(object)
-    elif osp.exists(dir_vel+mesh+'_v.h5'):
-        h5f = h5py.File(dir_vel+mesh+'_v.h5', 'r')
+    outfile = outpath + mesh
+
+    #print 'saving u velocity...'
+    #for t in xrange(nt):
+    #    if p:
+    #        ut = u[t]
+    #    elif h:
+    #        ut = np.array(h5f['u_interp'][t])
+    #    np.savetxt(outfile+'.var1.t'+str(t)+'.txt', np.vstack((nodes, \
+    #                ut.flatten())).T, fmt='%i\t%f')
+    #h5f.close()
+
+    #print 'handling v velocity...'
+    #if osp.exists(dir_vel+mesh+'_w.pkl'):
+    #    v = np.load(dir_vel+mesh+'_v.pkl', mmap_mode = 'r')
+    #    # v = v.reshape(v.shape[0], -1).astype(object)
+    #elif osp.exists(dir_vel+mesh+'_v.h5'):
+    #    h5f = h5py.File(dir_vel+mesh+'_v.h5', 'r')
         # v = np.array(h5f['v_interp'][:])
-        h5f.close()
-    print 'saving v velocity...'
-    for t in xrange(nt):
-        if pkl:
-            vt = v[t]
-        elif h5:
-            vt = np.array(h5f['v_interp'][t])
-        np.savetxt(outfile+'.var2.t'+str(t)+'.txt', np.vstack((nodes, \
-                vt.flatten())).T, fmt='%i\t%f')
-    del v
+    #print 'saving v velocity...'
+    #for t in xrange(nt):
+    #    if p:
+    #        vt = v[t]
+    #    elif h:
+    #        vt = np.array(h5f['v_interp'][t])
+    #    np.savetxt(outfile+'.var2.t'+str(t)+'.txt', np.vstack((nodes, \
+    #            vt.flatten())).T, fmt='%i\t%f')
+    #h5f.close()
 
     print 'handling w velocity...'
     if osp.exists(dir_vel+mesh+'_w.pkl'):
@@ -145,16 +151,15 @@ if __name__ == '__main__':
     elif osp.exists(dir_vel+mesh+'_w.h5'):
         h5f = h5py.File(dir_vel+mesh+'_w.h5', 'r')
         # w = np.array(h5f['w_interp'][:])
-        h5f.close()
     print 'saving w velocity...'
     for t in xrange(nt):
-        if pkl:
+        if p:
             wt = w[t]
-        elif h5:
+        elif h:
             wt = np.array(h5f['w_interp'][t])
         np.savetxt(outfile+'.var3.t'+str(t)+'.txt', np.vstack((nodes, \
                 wt.flatten())).T, fmt='%i\t%f')
-    del w
+    h5f.close()
 
     nvars = 4
     var0 = 'Z'
@@ -174,13 +179,6 @@ if __name__ == '__main__':
                             depth,depth,depth,depth,depth))
 
     z = np.multiply(depth,siglay.reshape(-1))
-
-    # save to file
-    print 'saving to files...'
-    if not osp.exists(outpath):
-        os.makedirs(outpath)
-
-    outfile = outpath + mesh
 
     # numpy.savetxt write bytes to file, which doesn't work with the file open
     # in text mode. Work around this by opening in binary mode and writing
@@ -210,9 +208,8 @@ if __name__ == '__main__':
 
     print 'writing depth...'
     for t in xrange(nt):
-        np.savetxt(outfile+'.var0.t'+str(t)+'.txt', np.vstack((nodes, z[t])).T, \
-                   fmt='%i\t%f')
-
+        np.savetxt(outfile+'.var0.t'+str(t)+'.txt', np.vstack((nodes, \
+                z[t])).T, fmt='%i\t%f')
     del z
 
     print 'creating .ini file...'
