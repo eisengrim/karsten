@@ -118,54 +118,61 @@ if __name__ == '__main__':
     outfile = outpath + mesh
 
     print 'saving u velocity...'
-    for t in xrange(nt):
-        if p:
-            ut = u[t]
-        elif h:
-            ut = np.array(h5f['u_interp'][t])
-        np.savetxt(outfile+'.var1.t'+str(t)+'.txt', np.vstack((nodes, \
+    if osp.exists(outfile+'.var1.t0.txt'):
+        vels = True
+    else:
+        vels = False
+
+    if not vels:
+        for t in xrange(nt):
+            if p:
+                ut = u[t]
+            elif h:
+                ut = np.array(h5f['u_interp'][t])
+            np.savetxt(outfile+'.var1.t'+str(t)+'.txt', np.vstack((nodes, \
                     ut.flatten())).T, fmt='%i\t%f')
-    h5f.close()
+        h5f.close()
 
-    print 'handling v velocity...'
-    if osp.exists(dir_vel+mesh+'_w.pkl'):
-        v = np.load(dir_vel+mesh+'_v.pkl', mmap_mode = 'r')
-        # v = v.reshape(v.shape[0], -1).astype(object)
-    elif osp.exists(dir_vel+mesh+'_v.h5'):
-        h5f = h5py.File(dir_vel+mesh+'_v.h5', 'r')
-        # v = np.array(h5f['v_interp'][:])
-    print 'saving v velocity...'
-    for t in xrange(nt):
-        if p:
-            vt = v[t]
-        elif h:
-            vt = np.array(h5f['v_interp'][t])
-        np.savetxt(outfile+'.var2.t'+str(t)+'.txt', np.vstack((nodes, \
-                vt.flatten())).T, fmt='%i\t%f')
-    h5f.close()
+        print 'handling v velocity...'
+        if osp.exists(dir_vel+mesh+'_w.pkl'):
+            v = np.load(dir_vel+mesh+'_v.pkl', mmap_mode = 'r')
+            # v = v.reshape(v.shape[0], -1).astype(object)
+        elif osp.exists(dir_vel+mesh+'_v.h5'):
+            h5f = h5py.File(dir_vel+mesh+'_v.h5', 'r')
+            # v = np.array(h5f['v_interp'][:])
+        print 'saving v velocity...'
+        for t in xrange(nt):
+            if p:
+                vt = v[t]
+            elif h:
+                vt = np.array(h5f['v_interp'][t])
+            np.savetxt(outfile+'.var2.t'+str(t)+'.txt', np.vstack((nodes, \
+                    vt.flatten())).T, fmt='%i\t%f')
+        h5f.close()
 
-    print 'handling w velocity...'
-    if osp.exists(dir_vel+mesh+'_w.pkl'):
-        w = np.load(dir_vel+mesh+'_w.pkl', mmap_mode = 'r')
-        # w = w.reshape(w.shape[0], -1).astype(object)
-    elif osp.exists(dir_vel+mesh+'_w.h5'):
-        h5f = h5py.File(dir_vel+mesh+'_w.h5', 'r')
-        # w = np.array(h5f['w_interp'][:])
-    print 'saving w velocity...'
-    for t in xrange(nt):
-        if p:
-            wt = w[t]
-        elif h:
-            wt = np.array(h5f['w_interp'][t])
-        np.savetxt(outfile+'.var3.t'+str(t)+'.txt', np.vstack((nodes, \
-                wt.flatten())).T, fmt='%i\t%f')
-    h5f.close()
+        print 'handling w velocity...'
+        if osp.exists(dir_vel+mesh+'_w.pkl'):
+            w = np.load(dir_vel+mesh+'_w.pkl', mmap_mode = 'r')
+            # w = w.reshape(w.shape[0], -1).astype(object)
+        elif osp.exists(dir_vel+mesh+'_w.h5'):
+            h5f = h5py.File(dir_vel+mesh+'_w.h5', 'r')
+            # w = np.array(h5f['w_interp'][:])
+        print 'saving w velocity...'
+        for t in xrange(nt):
+            if p:
+                wt = w[t]
+            elif h:
+                wt = np.array(h5f['w_interp'][t])
+            np.savetxt(outfile+'.var3.t'+str(t)+'.txt', np.vstack((nodes, \
+                    wt.flatten())).T, fmt='%i\t%f')
+        h5f.close()
 
     nvars = 4
     var0 = 'Z'
     var1 = 'U'
     var2 = 'V'
     var3 = 'W'
+    var4 = 'DEPTH'
 
     # deal with height coordinate
     print 'loading z coordinate variable...'
@@ -217,10 +224,11 @@ if __name__ == '__main__':
         to_write = """[paths]
 basename = %s
 output = %s
+particles = *fill*
 
 [settings]
 dimensions = 3
-particle_steps = 1
+particle_steps = 60
 
 [indexes]
 fish = 0
@@ -229,6 +237,7 @@ z = 0
 u = 1
 v = 2
 w = 3
+depth = 4
 """
 
         f.write(to_write % (outfile, outpath + 'output/'))
