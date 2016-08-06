@@ -2,7 +2,7 @@
 Generates a CSV file containing x,y and lon,lat for the generation of attracting sources in Thomas Lake's Swansea code. Lon/Lat is given in WGS84. Outputs text file file suitable for a field var input.
 
 Parameters:
-    generateFood.py -f fvcom -b min_lon max_lon min_lat max_lat -d depth -o out -r radius -s str
+    generateFood.py -f fvcom -b min_lon max_lon min_lat max_lat -d depth -o out -r radius -s str -pvxl
 """
 
 import argparse
@@ -32,6 +32,8 @@ if  __name__ == '__main__':
             help="output data in lon/lat format", default=False)
     parser.add_argument('-x', action='store_true', dest='use_xy', \
             help="output data in x/y format", default=True)
+    parser.add_argument('-p', action="store_true", dest='plot', \
+            help="generate color map of food sources", default=False)
 
     args = parser.parse_args()
 
@@ -73,6 +75,11 @@ if  __name__ == '__main__':
             np.savetxt(f, np.vstack((x, y, np.zeros(len(x)), \
                     rads, stren)).T, fmt='%f,%f,%f\t%f\t%f')
 
+    if args.plot:
+        print 'generating plot...'
+        this = np.zeros(model.Grid.nnode)
+        this[idx] = 100
+        model.Plots.colormap_var(,var=this, mesh=False, title="Food Availability")
     # np.savetxt(args.outpath + '_ll.txt', np.vstack((lat, lon)).T, fmt='%f, %f')
     # dat = np.vstack((lat,lon)).T
 
