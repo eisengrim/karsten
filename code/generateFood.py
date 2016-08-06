@@ -19,7 +19,7 @@ if  __name__ == '__main__':
             help='path to fvcom nc file', type=str, required=True)
     parser.add_argument('-b', action='store', default=None, dest='box', \
             help='bounding box of for a region within the grid', required=True,\
-            metavar='L',type=float, nargs=4)
+            metavar='L',type=float, nargs=4, default=['n','n','n','n'])
     parser.add_argument('-o', action='store', default=None, dest='outpath', \
             help='path to outfile basename', type=str, required=True)
     parser.add_argument('-r', action='store', default=500, dest='radius', \
@@ -41,7 +41,10 @@ if  __name__ == '__main__':
     if not args.path2fvcom.endswith('.nc'):
         sys.exit('not a valid netcdf4 file.')
 
-    model = FVCOM(args.path2fvcom, ax=args.box)
+    if 'n' in args.box:
+        model.FVCOM(args.path2fvcom)
+    else:
+        model = FVCOM(args.path2fvcom, ax=args.box)
     print 'h is of size ' + str(model.Grid.h.shape[0]) + '...'
 
     idx1 = np.where(model.Grid.h > 0)
