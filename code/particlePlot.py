@@ -2,7 +2,7 @@
 
 """
 usage:
-python particlePlot.py [GP/PP/DG] YYYY_Mmm_DD_3D [0.015/0.012/0.009] path/2/pyticle/tracker/output.nc
+python particlePlot.py path/2/fvcom/output.nc path/2/pyticle/tracker/output.nc
 """
 
 # library imports
@@ -18,32 +18,24 @@ import matplotlib.tri as Tri
 from datetime import datetime, timedelta
 from pyseidon import *
 
-PATH2SIM="/EcoII/acadia_uni/workspace/simulated/FVCOM/dngridCSR/drifter_runs/"
-PATH2OBS="/EcoII/acadia_uni/workspace/observed/"
-PATH2OUT="/EcoII/acadia_uni/projects/drifters/plots/pytrkr/"
-
 # local imports
 from drifterUtils import *
 from createColorMap import createColorMap
 
+path2pytrkr = '/EcoII/acadia_uni/projects/drifters/pyticle_tracker/' + \
+        'HH_20111022-29/HH_2011_Oct_22-29_AF_3D_output.nc'
+path2fvcom = '/EcoII/acadia_uni/projects/acadia_force_numerical_model_r20/' + \
+        '2011-10-22_2011-10-29/output/acadia_force_3d_0001.nc'
+loc = 'HH'
+sim = '2011_Oct_22-29_AF_3D'
+bfric = '0.015'
 
 if __name__ == '__main__':
 
-    if len(sys.argv) < 5:
-        sys.exit('not enough command line args. see usage.')
-
-    try:
-        filename = str(sys.argv[4])
-        bfric = str(sys.argv[3])
-        simdate = str(sys.argv[2])
-        loc = str(sys.argv[1])
-    except:
-        sys.exit('error parsing command line argument.')
-
-    if not osp.exists(filename):
+    if not osp.exists(path2pytrkr):
         sys.exit('nc file not found / invalid.')
 
-    pytkl = nc.Dataset(filename, 'r', format='NETCDF4_CLASSIC')
+    pytkl = nc.Dataset(path2pytrkr, 'r', format='NETCDF4_CLASSIC')
 
     sns.set(font="serif")
 
@@ -53,53 +45,53 @@ if __name__ == '__main__':
         centre = [-65.76000, 44.67751]
     elif loc == 'PP':
         centre = [-65.206924, 44.389368]
+    elif loc == 'HH':
+        centre = [-64.625361, 45.206072]
     else:
         sys.exit('location tag not recognized.')
 
     if bfric not in ['0.015', '0.012', '0.009']:
         sys.exit('bottom friction tag not valid.')
 
-    simpath = PATH2SIM + 'BFRIC_' + bfric + '/' + loc + '/' + simdate + \
-            '/output/subdomain_' + loc + '1_0001.nc'
-    obspath = PATH2OBS + loc + '/Drifter/'
-
-    if not osp.exists(simpath) or not osp.isfile(simpath):
+    if not osp.exists(path2fvcom) or not osp.isfile(path2fvcom):
         sys.exit('simulation path not found / valid.')
 
     print 'opening fvcom file...'
-    ncfile = FVCOM(simpath, debug=False)
-    print 'calculating ebb/flood split at centre of location...'
-    fI, eI, _, _ = ncfile.Util2D.ebb_flood_split_at_point(centre[0], centre[1])
-    print 'calculating model velocity norm...'
-    ncfile.Util3D.velo_norm()
+    ncfile = FVCOM(path2fvcom, debug=False)
+    # print 'calculating ebb/flood split at centre of location...'
+    # fI,eI,_,_ = ncfile.Util2D.ebb_flood_split_at_point(centre[0],centre[1])
+    # print 'calculating model velocity norm...'
+    # ncfile.Util3D.velo_norm()
 
-    # for now, drifter = false. add this later
+    # print 'creating time window...'
+    ## this is in julian time
+    # tModel = ncfile.Variables.julianTime
+    # tPytkl = pytkl.variables['time'][:]
+    # win1 = (np.abs(tModel - tPytkl.min())).argmin()
+    # win2 = (np.abs(tModel - tPytkl.max())).argmin()
 
-    print 'creating time window...'
-    # this is in julian time
-    tModel = ncfile.Variables.julianTime
-    tPytkl = pytkl.variables['time'][:]
-
-    win1 = (np.abs(tModel - tPytkl.min())).argmin()
-    win2 = (np.abs(tModel - tPytkl.max())).argmin()
-
-    tideNorm = np.mean(ncfile.Variables.velo_norm[win1:win2,:,:], 0)
+    # tideNorm = np.mean(ncfile.Variables.velo_norm[win1:win2,:,:], 0)
+    bathym = ncfile.Grid.h.clip(max=150)
 
     print 'preparing to create color map...'
-
-    fig = createColorMap(ncfile, tideNorm[0,:], mesh=False, \
-            title = 'Pyticle Track for ' +loc+'_'+ simdate,
-            label='Mean Velocity Norm (m/s)')
-
+    fig = createColorMap(ncfile, bathym, mesh=False, \
+            title = 'Particle Track for ('+loc+','+sim+')',
+            label='Depth (m)')
+    ax = fig.gca()
     lon = pytkl.variables['lon'][:]
-    lat = pytkl.variables['lat'][:]
+    lat = pytkl.variables['lat'][:]# + 0.055
     print 'adding scatter plot...'
     plt.scatter(lon, lat, c='k')
-
+    ax.set_xlim(pytkl.variables['lon'][:].min()-0.01, \
+            pytkl.variables['lon'][:].max()+0.01)
+    ax.set_ylim(pytkl.variables['lat'][:].min()-0.05, \
+            pytkl.variables['lat'][:].max()+0.05)
     plt.show()
+
 
 #    savename = raw_input('enter a save name: ')
 #    if not savename:
+
 #        sys.exit()
 #
 #    print 'creating save directory...'
