@@ -17,9 +17,9 @@ if  __name__ == '__main__':
           + '-d depth -o out -r radius -s str')
     parser.add_argument('-f', action='store', default=None, dest='path2fvcom', \
             help='path to fvcom nc file', type=str, required=True)
-    parser.add_argument('-b', action='store', default=None, dest='box', \
+    parser.add_argument('-b', action='store', dest='box', \
             help='bounding box of for a region within the grid', required=True,\
-            metavar='L',type=float, nargs=4, default=['n','n','n','n'])
+            metavar='L',type=float, nargs=4, default='n n n n')
     parser.add_argument('-o', action='store', default=None, dest='outpath', \
             help='path to outfile basename', type=str, required=True)
     parser.add_argument('-r', action='store', default=500, dest='radius', \
@@ -82,7 +82,9 @@ if  __name__ == '__main__':
         print 'generating plot...'
         this = np.zeros(model.Grid.nnode)
         this[idx] = 100
-        model.Plots.colormap_var(,var=this, mesh=False, title="Food Availability")
+        model.Plots.colormap_var(var=this, isoline='none', \
+                mesh=False, title="Food Availability")
+        #fig.save(args.outpath+'_plot.png')
     # np.savetxt(args.outpath + '_ll.txt', np.vstack((lat, lon)).T, fmt='%f, %f')
     # dat = np.vstack((lat,lon)).T
 
