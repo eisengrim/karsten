@@ -8,7 +8,7 @@ import seaborn as sns
 import sys
 
 def createColorMap(model, var, title='', label='', mesh=True, bounds=[], \
-                    debug=True):
+                    debug=True, c='jet'):
     """
     2D colormap plot of a given variable and mesh. This function is adapted from
     PySeidon's colormap_var, except it is customized to add the plot to an
@@ -20,6 +20,7 @@ def createColorMap(model, var, title='', label='', mesh=True, bounds=[], \
         - mesh = boolean, True with mesh, False without mesh
         - bounds = list, constricted region subdomain in form of
             [lon.min, lon.max, lat.min, lat.max]
+        - color = 'jet' or 'gist_earth'
     returns:
         - figure for future plotting
     """
@@ -76,7 +77,11 @@ def createColorMap(model, var, title='', label='', mesh=True, bounds=[], \
 
     if debug:
         print '\tcomputing colormap...'
-    cmap = plt.cm.jet
+    if c == 'jet':
+        cmap = plt.cm.jet
+    elif c == 'earth':
+        cmap = plt.cm.gist_earth
+
     f = ax.tripcolor(tri, var[:], vmax=cmax, vmin=cmin, cmap=cmap)
 
     if mesh:
