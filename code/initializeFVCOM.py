@@ -57,17 +57,17 @@ if __name__ == '__main__':
     """
 
     model = FVCOM(PATH2SIM, debug=False)
-    model2= FVCOM(PATH2SIM2, debug=False)
-    model3= FVCOM(PATH2SIM3, debug=False)
+    # model2= FVCOM(PATH2SIM2, debug=False)
+    # model3= FVCOM(PATH2SIM3, debug=False)
 
-    drift = Drifter(PATH2OBS, debug=False)
-    drift2= Drifter(PATH2OBS2, debug=False)
-    drift3= Drifter(PATH2OBS3, debug=False)
+    # drift = Drifter(PATH2OBS, debug=False)
+    # drift2= Drifter(PATH2OBS2, debug=False)
+    # drift3= Drifter(PATH2OBS3, debug=False)
     # adcp = ADCP(PATH_TO_ADCP, debug=True)
 
-    pytkl = nc.Dataset(PATH2PY, 'r', type='NETCDF4_CLASSIC')
-    pytkl2 = nc.Dataset(PATH2PY2, 'r', type='NETCDF4_CLASSIC')
-    pytkl3 = nc.Dataset(PATH2PY3, 'r', type='NETCDF4_CLASSIC')
+    # pytkl = nc.Dataset(PATH2PY, 'r', type='NETCDF4_CLASSIC')
+    # pytkl2 = nc.Dataset(PATH2PY2, 'r', type='NETCDF4_CLASSIC')
+    # pytkl3 = nc.Dataset(PATH2PY3, 'r', type='NETCDF4_CLASSIC')
 
     # create validation objects
     # valid = Validation(drift, model, flow='sf', debug=True)
