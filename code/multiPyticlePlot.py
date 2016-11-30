@@ -23,10 +23,10 @@ from drifterUtils import *
 from createColorMap import createColorMap
 
 path2pytrkr = '/EcoII/acadia_uni/projects/drifters/pyticle_tracker/' + \
-        'HH_20111022-29/HH_2011_Oct_22-29_AF_3D_output.nc'
+        'MPe_2011_10_22-29_3D/MP_2011_Oct_22-29_3D_output.nc'
 path2fvcom = '/EcoII/acadia_uni/projects/acadia_force_numerical_model_r20/' + \
         '2011-10-22_2011-10-29/output/acadia_force_3d_0001.nc'
-loc = 'HH'
+loc = 'MPe'
 sim = '2011_Oct_22-29_AF_3D'
 bfric = '0.015'
 
@@ -39,14 +39,16 @@ if __name__ == '__main__':
 
     sns.set(font="serif")
 
-    if loc == 'GP':
+    if 'GP' in loc:
         centre = [-66.33906, 44.26898]
-    elif loc == 'DG':
+    elif 'DG' in loc:
         centre = [-65.76000, 44.67751]
-    elif loc == 'PP':
+    elif 'PP' in loc:
         centre = [-65.206924, 44.389368]
-    elif loc == 'HH':
+    elif 'HH' in loc:
         centre = [-64.625361, 45.206072]
+    elif 'MP' in loc:
+        centre = [-64.418942, 45.3499696]
     else:
         sys.exit('location tag not recognized.')
 
@@ -93,7 +95,7 @@ if __name__ == '__main__':
     ptime = len(pytkl.variables['time'])
     ftime = ncfile.Grid.ntime
 
-    for ts in np.arange(0, ptime, ptime/ftime*8):
+    for ts in np.arange(0, ptime, ptime/ftime*4):
         speed = np.sqrt(np.power(ncfile.Variables.u[ts,0,:],2) \
                 + np.power(ncfile.Variables.v[ts,0,:],2))
         fig = createColorMap(ncfile, speed, mesh=False, \
@@ -110,7 +112,7 @@ if __name__ == '__main__':
                 pytkl.variables['lat'][:].max()+0.025)
 
         plt.savefig('/array/home/119865c/figs/'+loc+'_'+sim+'.'+str(ts)+'.png')
-
+        plt.close(fig)
 #    savename = raw_input('enter a save name: ')
 #    if not savename:
 
