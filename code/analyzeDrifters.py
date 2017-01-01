@@ -14,6 +14,7 @@ stats that are returned to be used in the command line, and then plotted.
 import sys, os
 import argparse as arp
 import numpy as np
+import pandas as pd
 import scipy as sp
 import scipy.special as sps
 import scipy.io as sio
@@ -143,7 +144,10 @@ def setOptions(args):
     elif args.debug:
         print '\tnc files found.'
 
-    tide = args.tide[0]
+    if args.tide:
+        tide = args.tide[0]
+    else:
+        tide = None
 
     return args.loc[0], sim_path, obs_dir, matfiles, tide
 
@@ -166,6 +170,7 @@ if __name__ == '__main__':
 
     # initialize cumulative data arrays
     drifters = {}
+    all_date = []
     all_mean = []
     all_std = []
     all_speedO = []
@@ -217,13 +222,14 @@ if __name__ == '__main__':
 
         drift, mean, std, speedO, speedS, uspdO, uspdS, bias, lat, lon, \
             lon0, lat0, ubias, depth, erru, errv, err_mag, err_dir, avg_d \
-            = calculateBias(ncfile, files, loc, tide_opt=tide, debug=debug)
+            = calculateBias(ncfile, files, loc, date=dir_name[82:96], tide_opt=tide, debug=debug)
 
         if debug:
             print 'adding to cumulative data...'
 
         # extracts the name of the directory without including the whole path
         drifters[dir_name[82:96]] = drift
+        all_date.extend(dir_name[82:96])
         all_mean.extend(mean)
         all_std.extend(std)
         all_speedS.extend(speedS)

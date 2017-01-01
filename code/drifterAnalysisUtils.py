@@ -1,6 +1,7 @@
 #! /usr/env/python2.7
 
 import numpy as np
+import pandas as pd
 from pyseidon import *
 import scipy.special as sps
 
@@ -95,7 +96,7 @@ def compareBFRIC(drift, debug=False):
     pass
 
 
-def calculateBias(ncfile, files, loc, tide_opt=None, debug=False):
+def calculateBias(ncfile, files, loc, date, tide_opt=None, debug=False):
     """
     Compiles necessary data, calculates individual biases and
     takes the mean and standard deviation. Also calculates the
@@ -106,6 +107,7 @@ def calculateBias(ncfile, files, loc, tide_opt=None, debug=False):
         - ncfile : FVCOM object
         - files : list of matlab filenames in directory
         - loc : location tag
+        - date : simulation date
         - tide_opt : 'ebb' or 'flood' ... returns only drifter data for tide
         - sim_name : name of simulation directory used
     """
@@ -117,8 +119,9 @@ def calculateBias(ncfile, files, loc, tide_opt=None, debug=False):
 
     data_count = 0
     drifters = {}
-    all_bias = []
-    all_ubias = []
+    dates = {}
+    all_diff = []
+    all_udiff = []
     all_mean = []
     all_sdev = []
     obs_speed = []
@@ -198,8 +201,8 @@ def calculateBias(ncfile, files, loc, tide_opt=None, debug=False):
         speedS = uspeedS * np.sign(mV)
         diffs = np.subtract(uspeedS, uspeedO)
         udiffs = np.subtract(speedS, speedO)
-        mean_bias = np.mean(diffs)
-        sdev_bias = np.std(diffs)
+        mean_diff = np.mean(diffs)
+        sdev_diff = np.std(diffs)
         erru = np.subtract(mU, oU)
         errv = np.subtract(mV, oV)
         err_mag = np.sqrt(erru**2 + errv**2)
@@ -208,35 +211,41 @@ def calculateBias(ncfile, files, loc, tide_opt=None, debug=False):
         # info on # of data this drifter has and other individual data
         drifters[fname[48:-4]]['filename'] = fname[48:-4]
         fname = fname[48:-4]
+        drifters[fname]['date'] = date
         drifters[fname]['num'] = i
-        drifters[fname]['(start, stop)'] = (data_count,data_count+len(olon)-1)
+        drifters[fname]['start'] = data_count
+        drifters[fname]['stop'] = data_count + len(olon) - 1
         data_count += len(olon)
         drifters[fname]['tide'] = str(drift.Data['water_level'].tide)
         drifters[fname]['beta'] = drift.Data['water_level'].beta
         ind = [np.argmin(np.abs(drift.Data['velocity'].vel_time - x)) \
                 for x in valid.Variables.struct['mod_time']]
-        drifters[fname]['alpha'] = drift.Data['velocity'].alpha[ind]
-        drifters[fname]['obs_speed'] = speedO
-        drifters[fname]['sim_speed'] = speedS
-        drifters[fname]['bias'] = diffs
-        drifters[fname]['mean_bias'] = mean_bias
-        drifters[fname]['sdev_bias'] = sdev_bias
-        drifters[fname]['err_u'] = erru
-        drifters[fname]['err_v'] = errv
-        drifters[fname]['err_mag'] = err_mag
-        drifters[fname]['err_dir'] = err_dir
+        drifters[fname]['alpha'] = pd.Series(drift.Data['velocity'].alpha[ind])
+        drifters[fname]['obs_speed'] = pd.Series(speedO)
+        drifters[fname]['sim_speed'] = pd.Series(speedS)
+        drifters[fname]['diff'] = pd.Series(diffs)
+        drifters[fname]['mean_diff'] = pd.Series(mean_diff)
+        drifters[fname]['sdev_diff'] = pd.Series(sdev_diff)
+        drifters[fname]['err_u'] = pd.Series(erru)
+        drifters[fname]['err_v'] = pd.Series(errv)
+        drifters[fname]['err_mag'] = pd.Series(err_mag)
+        drifters[fname]['err_dir'] = pd.Series(err_dir)
         idx = [np.argmin(np.abs(ncfile.Variables.matlabTime-x)) for x in mTimes]
         depth = [depth[k][i][-1] for k, i in enumerate(idx)]
-        drifters[fname]['depth'] = depth
-        drifters[fname]['u_sim_speed'] = uspeedS
-        drifters[fname]['u_obs_speed'] = uspeedO
-        drifters[fname]['u_bias'] = udiffs
-        drifters[fname]['lon'] = olon
-        drifters[fname]['lat'] = olat
-        drifters[fname]['obs_timeseries'] = {'u' : oU, 'v' : oV}
-        drifters[fname]['mod_timeseries'] = {'u' : mU, 'v' : mV}
-        drifters[fname]['datetimes'] = datetimes
-        drifters[fname]['mat_times'] = mTimes
+        drifters[fname]['depth'] = pd.Series(depth)
+        drifters[fname]['u_sim_speed'] = pd.Series(uspeedS)
+        drifters[fname]['u_obs_speed'] = pd.Series(uspeedO)
+        drifters[fname]['u_diff'] = pd.Series(udiffs)
+        drifters[fname]['lon'] = pd.Series(olon)
+        drifters[fname]['lat'] = pd.Series(olat)
+        drifters[fname]['uobs'] = pd.Series(oU)
+        drifters[fname]['vobs'] = pd.Series(oV)
+        drifters[fname]['usim'] = pd.Series(mU)
+        drifters[fname]['vsim'] = pd.Series(mV)
+        # drifters[fname]['obs_timeseries'] = {'u' : oU, 'v' : oV}
+        # drifters[fname]['mod_timeseries'] = {'u' : mU, 'v' : mV}
+        # drifters[fname]['datetimes'] = datetimes
+        drifters[fname]['mat_times'] = pd.Series(mTimes)
 
         # find wind speed
         if fname.split('.')[0].split('_')[-1].startswith('S'):
@@ -253,10 +262,10 @@ def calculateBias(ncfile, files, loc, tide_opt=None, debug=False):
             wind = '0'
         drifters[fname]['wind_speed'] = wind
 
-        all_sdev.append(sdev_bias)
-        all_mean.append(mean_bias)
-        all_bias.extend(diffs)
-        all_ubias.extend(udiffs)
+        all_sdev.append(sdev_diff)
+        all_mean.append(mean_diff)
+        all_diff.extend(diffs)
+        all_udiff.extend(udiffs)
         all_erru.extend(erru)
         all_errv.extend(errv)
         all_err_mag.extend(err_mag)
@@ -279,7 +288,7 @@ def calculateBias(ncfile, files, loc, tide_opt=None, debug=False):
         print 'all drifters for ' + tide_opt + ' selected...'
 
     return drifters, all_mean, all_sdev, obs_speed, mod_speed, obs_uspeed, \
-         mod_uspeed, all_bias, o_lat, o_lon, lon0, lat0, all_ubias, depths, \
+         mod_uspeed, all_diff, o_lat, o_lon, lon0, lat0, all_udiff, depths, \
          all_erru, all_errv, all_err_mag, all_err_dir, mean_depth
 
 

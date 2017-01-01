@@ -16,21 +16,16 @@ import xarray as xr
 ### HEADER
 # Global variables #
 #  Number of cpus
-cpus = int(mp.cpu_count() * 0.8)  # using 70% ish of the cpu resource
+cpus = int(mp.cpu_count())  # using 100% ish of the cpu resource
+
 #  Paths
-#path2files = '/EcoII/acadia_uni/projects/OERA_MREA/work/simulations/2011_runs/fvcom_files/'
-#path2files = '/EcoII/force/force_acadia_project/work/simulations/acadia_bof_v2/2d/2011_monthly_runs/fvcom_files/'
-#path2files = '/EcoII/force/force_acadia_project/work/simulations/acadia_bof_v2/2d/BF_0.00275/2011_monthly_runs/fvcom_files/'
-path2files = '/EcoII/force/force_acadia_project/work/simulations/acadia_bof_v2/2d/BF_0.00275/2011-10-01_2011-10-31/output/'
-#filename = 'acadia_BoF_0001.nc'
-savename = 'fvcom_data_2011'
+path2files = "/EcoII/acadia_uni/projects/acadia_force_numerical_model_r20/2011-10-22_2011-10-29/output/"
+filename = 'acadia_force_3d_0001.nc'
+savename = 'fvcom_force_data_2011'
 #  Threshold for slack water (m/s)
 slack = 0.1  # 0.5
 #time range of 1 lunar month = 57 tidal cycles =  29 days, 11h, 56m, 24s
-time_range=['2011-10-01 00:00:00','2011-10-29 11:56:24']
-#area = [-64.886019,-64.605919,45.243679,45.35815]
-#area = [-64.82,-64.7,45.25,45.3]
-#area = [-64.6,-64.3,45.3,45.4]
+time_range=['2011-10-22 00:00:00','2011-10-29 11:56:24']
 area = [-65.0,-63.4,45.0,46]
 
 
@@ -149,7 +144,7 @@ def main_loop(sesteps, ua, va, elc, powden, results):
         if np.nanmean(diff_EL[fI])<0:
            temp=fI
            fI=eI
-           eI=temp		
+           eI=temp
            if pr_axis>=0:
               pr_axis=pr_axis-180
            else:
@@ -272,16 +267,16 @@ if __name__ == "__main__":
             gc.collect()
     else:
         filename=trim_list[0]
-        fvcom = FVCOM(path2files+filename,tx=time_range,ax=area)
-#        fvcom = FVCOM(path2files+filename)
-        print "...computing vorticity"
-        fvcom.Util2D.vorticity(debug=True)
-        vorticity = np.nanmean(np.abs(fvcom.Variables.depth_av_vorticity), axis=0)
-    	f = open("mrea_vorticity.p", "wb")
-        pkl.dump({'vorticity': vorticity,
-              'fvcom file': '/media/thomas/Data/Acadia/R50_v02/upper_BoF/acadia_upper_bof_v2_2d_0001.nc'}, f)
-        f.close()
-        fvcom.Variables.depth_av_vorticity=[]
+        fvcom = FVCOM(path2files+filename,ax=area)
+        # fvcom = FVCOM(path2files+filename)
+        # print "...computing vorticity"
+        # fvcom.Util2D.vorticity(debug=True)
+        # vorticity = np.nanmean(np.abs(fvcom.Variables.depth_av_vorticity), axis=0)
+        # f = open("mrea_vorticity.p", "wb")
+        # pkl.dump({'vorticity': vorticity,
+        #       'fvcom file': '/media/thomas/Data/Acadia/R50_v02/upper_BoF/acadia_upper_bof_v2_2d_0001.nc'}, f)
+        # f.close()
+        # fvcom.Variables.depth_av_vorticity=[]
         print "...computing power density"
         fvcom.Util2D.depth_averaged_power_density()
         powden = fvcom.Variables.depth_av_power_density[:]
@@ -386,12 +381,12 @@ if __name__ == "__main__":
     print "...done parallel processing"
 
     # Dump in pickle file
-    try:
-        f = open(savename + ".p", "wb")
-        pkl.dump(output_list, f)
-        f.close()
-    except:
-        pass
+    # try:
+    #     f = open(savename + ".p", "wb")
+    #     pkl.dump(output_list, f)
+    #     f.close()
+    # except:
+    #     pass
 
 #    # Load Dataset
 #    fvcomData = xr.open_dataset(path2files+filename, decode_times=False, drop_variables=['siglev', 'siglay'])
@@ -434,33 +429,35 @@ if __name__ == "__main__":
 #
     # Plot vorticity
 
-    os.chdir('/EcoII/acadia_uni/projects/OERA_MREA/scripts/mrea_output')
-    fvcom.Plots.colormap_var(vorticity, title='Horizontal vorticity', cmin=0.0,  # cmax=3.7, # isoline='var',
-                             units='1/s', mesh=False, cmap=cmap_std, kmz=True, png=True, shapefile=True)
-    
+    os.chdir('/EcoII/acadia_uni/projects/drifters/swansea/fvcom/')
+ #   fvcom.Plots.colormap_var(vorticity, title='Horizontal vorticity', cmin=0.0, \
+                            # cmax=3.7, # isoline='var', \
+ #                       units='1/s', mesh=False, cmap=cmap_std, kmz=True, png=True) #, shapefile=True)
+
 #    del vorticity, fvcomData
 #    gc.collect()
 ### END PROCESS
 
 ### PLOT
     # Bathymetry
-#    fvcom = FVCOM(path2files + filename)  # reload
+    # fvcom = FVCOM(path2files + filename)  # reload
     fvcom.Plots.colormap_var(fvcom.Grid.h, title='Bathymetry',isostep=10,
-                             units='m', mesh=False, kmz=True, png=True, shapefile=True)
+                             units='m', mesh=False, png=True) #,kmz=False, shapefile=True)
     # Slope
-#    fvcom.Util2D.slope()
-#    fvcom.Plots.colormap_var(fvcom.Grid.slope, title='Bathymetric slope',
-#                             units='degrees', mesh=False, kmz=True, png=True, shapefile=True)
+    #  fvcom.Util2D.slope()
+    #  fvcom.Plots.colormap_var(fvcom.Grid.slope, title='Bathymetric slope',
+    #                          units='degrees', mesh=False, kmz=True, png=True, shapefile=True)
     # LLW
     llw = el.min(axis=0)
     fvcom.Plots.colormap_var(fvcom.Grid.h + llw, title='Low Low Water', isoline='var',
-                             units='m', mesh=False, kmz=True, png=True, shapefile=True)
+                             units='m', mesh=False, png=True) #,kmz=False, shapefile=True)
     del llw
     gc.collect()
-    
+
     # Plot u mean
-#    fvcom.Plots.colormap_var(np.nanmean(ua, axis=0), title='Mean u velocity component', #cmin=0.0, cmax=3.7,  # isoline='var',
-#                             units='m/s', mesh=False, cmap=cmap_jet, kmz=True, png=True, shapefile=True)
+    #  fvcom.Plots.colormap_var(np.nanmean(ua, axis=0), title='Mean u velocity component',
+    #       cmin=0.0, cmax=3.7,  # isoline='var',
+    #       units='m/s', mesh=False, cmap=cmap_jet, kmz=True, png=True, shapefile=True)
     del ua
     gc.collect()
     # Plot v mean
@@ -471,15 +468,15 @@ if __name__ == "__main__":
     gc.collect()
     # Plot mean speed
     fvcom.Plots.colormap_var(np.nanmean(flowspeed, axis=0), title='Mean speed', cmin = 0.0, cmax=2.0, # isoline='var',
-                             units='m/s', mesh=False, cmap=cmap_jet,  kmz=True, png=True, shapefile=True)
+                          units='m/s', mesh=False, cmap=cmap_jet, png=True)#,kmz=False, shapefile=True)
     plt.close('all')
     # Plot cubic root of mean cubic speed
     crmcs = np.nanmean(flowspeed**3.0, axis=0)**(1.0/3.0)
-    fvcom.Plots.colormap_var(crmcs, title='cubic root of mean cubic speed', cmin = 0.0,  # cmax=3.7, # isoline='var',
-                             units='m/s', mesh=False, cmap=cmap_jet,  kmz=True, png=True, shapefile=True)
+    fvcom.Plots.colormap_var(crmcs, title='Cubic root of mean cubic speed', cmin = 0.0,  # cmax=3.7, # isoline='var',
+                          units='m/s', mesh=False, cmap=cmap_jet, png=True) #,kmz=False, shapefile=True)
     f = open("mrea_cubic_root_of_mean_cubic_speed.p", "wb")
-    pkl.dump({'cubic root of mean cubic speed': np.nanmean(flowspeed**3.0, axis=0)**(1.0/3.0),
-              'fvcom file': '/media/thomas/Data/Acadia/R50_v02/upper_BoF/acadia_upper_bof_v2_2d_0001.nc'}, f)
+    # pkl.dump({'cubic root of mean cubic speed': np.nanmean(flowspeed**3.0, axis=0)**(1.0/3.0),
+    #           'fvcom file': '/media/thomas/Data/Acadia/R50_v02/upper_BoF/acadia_upper_bof_v2_2d_0001.nc'}, f)
     f.close()
     del crmcs
     gc.collect()
@@ -494,24 +491,26 @@ if __name__ == "__main__":
 #     del speed95percentile
 #     gc.collect()
     # Plot max speed
-#     fvcom.Plots.colormap_var(flowspeed.max(axis=0), title='Max speed', cmin = 0.0, cmax=8.0,
-#                              units='m/s', mesh=False, kmz=True, cmap=cmap_jet, png=True, shapefile=True)
-#     del flowspeed
-#     gc.collect()
+    fvcom.Plots.colormap_var(flowspeed.max(axis=0), title='Max speed', cmin = 0.0, cmax=8.0,
+                              units='m/s', mesh=False, cmap=cmap_jet, png=True) #,kmz=False, shapefile=True)
+    del flowspeed
+    gc.collect()
     plt.close('all')
     # Plot mean power density
-    fvcom.Plots.colormap_var(np.nanmean(powden/ 1000.0 , axis=0), title='Mean power density', cmin = 0.0, cmax=20.0, # conversion to kW.m-2
-                             units='kW/m2', mesh=False, kmz=True,  cmap=cmap_jet, png=True, shapefile=True)
+    fvcom.Plots.colormap_var(np.nanmean(powden/ 1000.0 , axis=0), \
+            title='Mean power density', cmin = 0.0, cmax=20.0, # conversion to kW.m-2
+            units='kW/m2', mesh=False, cmap=cmap_jet, png=True)#,kmz=False, shapefile=True)
     # Plot max power density
-#    fvcom.Plots.colormap_var(np.nanmax(powden/ 1000.0 , axis=0), title='Max power density', #cmin = 3.0, cmax=9.0, # conversion to kW.m-2
+#    fvcom.Plots.colormap_var(np.nanmax(powden/ 1000.0 , axis=0), title='Max power density',
+    #cmin = 3.0, cmax=9.0, # conversion to kW.m-2
 #                             units='kW/m2', mesh=False, kmz=True,  cmap=cmap_jet, png=True, shapefile=True)
     # Plot mean speed flood and ebb
-    fvcom.Plots.colormap_var(output_list['speedFmean'][:], title='Mean speed flood', cmin = 0,  cmax=2.0,
-                             units='m/s', mesh=False, kmz=True,  cmap=cmap_jet, png=True, shapefile=True)
+    fvcom.Plots.colormap_var(output_list['speedFmean'][:], title='Mean speed flood', cmin = 0, cmax=2.0,
+                             units='m/s', mesh=False,  cmap=cmap_jet, png=True) #,kmz=False, shapefile=True)
 #    fvcom.Plots.colormap_var(output_list['speedFmax'][:], title='Max speed flood', cmin = 0.0, cmax=5.0,
 #                             units='m/s', mesh=False, kmz=True,  cmap=cmap_jet, png=True, shapefile=True)
     fvcom.Plots.colormap_var(output_list['speedEmean'][:], title='Mean speed ebb', cmin = 0, cmax=2.0,
-                             units='m/s', mesh=False, kmz=True,  cmap=cmap_jet, png=True, shapefile=True)
+                             units='m/s', mesh=False, cmap=cmap_jet, png=True) #,kmz=False, shapefile=True)
 #    fvcom.Plots.colormap_var(output_list['speedEmax'][:], title='Max speed ebb', cmin = 0.0, cmax=6.4,
 #                             units='m/s', mesh=False, kmz=True,  cmap=cmap_jet, png=True, shapefile=True)
     plt.close('all')
@@ -528,45 +527,45 @@ if __name__ == "__main__":
     # Plot mean power density flood and ebb
     fvcom.Plots.colormap_var(output_list['powdenFmean'][:],
                               title='Mean power density flood', cmin = 0.0, cmax=10.0,
-                              units='kW/m2', mesh=False, kmz=True,  cmap=cmap_jet, png=True, shapefile=True)
+                              units='kW/m2', mesh=False, cmap=cmap_jet, png=True) #, shapefile=True)
     fvcom.Plots.colormap_var(output_list['powdenFmax'][:],
                               title='Max power density flood', cmin = 0.0, cmax=10.0,
-                              units='kW/m2', mesh=False, kmz=True,  cmap=cmap_jet, png=True, shapefile=True)
+                              units='kW/m2', mesh=False, cmap=cmap_jet, png=True) #, shapefile=True)
     fvcom.Plots.colormap_var(output_list['powdenEmean'][:],
                               title='Mean power density ebb', cmin = 0.0, cmax=10.0,
-                              units='kW/m2', mesh=False, kmz=True, cmap=cmap_jet, png=True, shapefile=True)
+                              units='kW/m2', mesh=False, cmap=cmap_jet, png=True) #, shapefile=True)
     fvcom.Plots.colormap_var(output_list['powdenEmax'][:],
                              title='Max power density ebb', cmin = 0.0,  cmax=10.0,
-                              units='kW/m2', mesh=False, kmz=True, cmap=cmap_jet, png=True, shapefile=True)
+                              units='kW/m2', mesh=False, cmap=cmap_jet, png=True) #, shapefile=True)
 #     plt.close('all')
     # Plot power asymetry
     powasy = output_list['powdenEmean'][:]/output_list['powdenFmean'][:]
     powasy[np.where(np.isnan(powasy))] = 50.0
     fvcom.Plots.colormap_var(powasy, title='Mean power density asymmetry ebb vs flood', cmin = 0.0, cmax=10.0,
-                             mesh=False, kmz=True, cmap=cmap_jet, png=True, shapefile=True)
+                             mesh=False, cmap=cmap_jet, png=True) #, shapefile=True)
     # Plot directional plots
     fvcom.Plots.colormap_var(output_list['pa'][:], title='Principal axis', cmin = -180.0, cmax= 180.0,
-                              units='deg.', mesh=False, kmz=True, cmap=cmap_spec, png=True, shapefile=True)
+                              units='deg.', mesh=False, cmap=cmap_spec, png=True) #, shapefile=True)
     fvcom.Plots.colormap_var(output_list['paf'][:], title='Principal axis flood', cmin = -180.0, cmax= 180.0,
-                              units='deg.', mesh=False, kmz=True, cmap=cmap_spec, png=True, shapefile=True)
+                              units='deg.', mesh=False, cmap=cmap_spec, png=True) #, shapefile=True)
     # TR: weird things happening here with ebb direction
     fvcom.Plots.colormap_var(output_list['pae'][:], title='Principal axis ebb', cmin=-180.0,  cmax=180.0,
-                              units='deg.', mesh=False, kmz=True, cmap=cmap_spec, png=True, shapefile=True)
+                              units='deg.', mesh=False, cmap=cmap_spec, png=True) #, shapefile=True)
 #    fvcom.Plots.colormap_var(output_list['paf'][:] + output_list['dirasy'][:], title='Principal axis ebb', cmin = 130.0, # cmax=180.0,
 #                             units='deg.', mesh=False, kmz=True, cmap=cmap_spec, png=True, shapefile=True)
     stdf = np.ma.masked_where(np.isnan(stdf), stdf)
     output_list['stdf'][np.isnan(output_list['stdf'][:])] = 90.0
     fvcom.Plots.colormap_var(output_list['stdf'][:], title='Standard deviation flood', cmin=0.0, #cmax=65.0,
-                              mesh=False, kmz=True, cmap=cmap_std, png=True, shapefile=True)
+                              mesh=False, cmap=cmap_std, png=True) #, shapefile=True)
     stde = np.ma.masked_where(np.isnan(stde), stde)
     output_list['stde'][np.isnan(output_list['stde'][:])] = 90.0
     fvcom.Plots.colormap_var(output_list['stde'][:], title='Standard deviation ebb', cmin=0.0, #cmax=65.0,
-                              mesh=False, kmz=True, cmap=cmap_std, png=True, shapefile=True)
+                              mesh=False, cmap=cmap_std, png=True) #, shapefile=True)
     output_list['stda'][np.isnan(output_list['stda'][:])] = 90.0
     fvcom.Plots.colormap_var(output_list['stda'][:], title='Standard deviation', cmin=0.0, #cmax=65.0,
-                              mesh=False, kmz=True, cmap=cmap_std, png=True, shapefile=True)
+                              mesh=False, cmap=cmap_std, png=True) #, shapefile=True)
     fvcom.Plots.colormap_var(output_list['dirasy'][:], title='Directional asymetry', cmin = 0.0, cmax=180.0,
-                             units='deg.', mesh=False, kmz=True, cmap=cmap_std, png=True, shapefile=True)
+                             units='deg.', mesh=False, cmap=cmap_std, png=True) #, shapefile=True)
 
-    
+
     raw_input("---Press enter to exit---")
