@@ -66,8 +66,8 @@ def parseArgs():
             default='0.015', required=True, type=str)
     parser._optionals.title = 'optional flag arguments'
     # option to write initial positions
-    parser.add_argument("--write", '-w', help='records initial positions of ' \
-            + 'drifters to .dat file.', action="store_true")
+    parser.add_argument("--write", '-w', help='records data frame of ' \
+            + 'drifters to a CSV file.', action="store_true")
     parser.add_argument('--tide', '-t', help='adds tidal option', nargs=1, \
             choices=('ebb', 'flood', None), default=None)
 
@@ -229,7 +229,7 @@ if __name__ == '__main__':
 
         # extracts the name of the directory without including the whole path
         drifters[dir_name[82:96]] = drift
-        all_date.extend(dir_name[82:96])
+        all_date.extend(dir_name[82:93])
         all_mean.extend(mean)
         all_std.extend(std)
         all_speedS.extend(speedS)
@@ -281,12 +281,20 @@ if __name__ == '__main__':
 
     # write init loc data to text file
     if args.write:
-        if debug:
-            print 'recording initial positions...'
+        ids=[]
+        frames=[]
+        for id, d in drift.iteritems():
+            ids.append(id)
+            frames.append(pd.DataFrame(d))
+        data = pd.concat(frames, keys=ids)
+        data.to_csv("data.csv")
 
-        with open('init_locs_'+loc+'.dat', 'w') as f:
-            for lon, lat in zip(all_lon0, all_lat0):
-                f.write(str(lon) + ' ' + str(lat) + '\n')
+        # if debug:
+        #     print 'recording initial positions...'
+
+        # with open('init_locs_'+loc+'.dat', 'w') as f:
+        #     for lon, lat in zip(all_lon0, all_lat0):
+        #         f.write(str(lon) + ' ' + str(lat) + '\n')
 
     if debug:
         print '...all done!'
