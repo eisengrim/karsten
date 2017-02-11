@@ -191,7 +191,7 @@ def spatialError(model, lon, lat, uspdO, uspdS, debug=False):
     if debug:
         print '\tcomputing colors...'
 
-    speedErr = np.abs(uspdO - uspdS)
+    speedErr = uspdO - uspdS
 
     if debug:
         print '\tcreating map...'
@@ -202,10 +202,9 @@ def spatialError(model, lon, lat, uspdO, uspdS, debug=False):
 	clim=np.percentile(speedErr,[5,95])
     if debug:
         print '\tcreating color bar...'
+
 	cb = ax.scatter(lon, lat, c=speedErr, s=10, edgecolor='None', \
             vmin=clim[0], vmax=clim[1], zorder=20)
-    if debug:
-        print '\tfinalizing...'
     plt.colorbar(cb)
     if debug:
         print '\tcreating color bar...'

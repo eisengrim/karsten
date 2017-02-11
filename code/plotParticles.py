@@ -391,6 +391,45 @@ def spatialProbability(pytkl, drift, ncfile, dname, sim, loc, save=False, \
     plt.close(fig)
 
 
+def pyticleStats(pytkl, drift, dname, verbose=False):
+    """
+    Generates statistics of the error for run.
+    """
+
+    if verbose:
+        print 'collecting lon/lats...'
+    lon = np.array(pytkl.variables['lon'][:])
+    lat = np.array(pytkl.variables['lat'][:])
+    lonD = drift.Variables.lon
+    latD = drift.Variables.lat
+
+    if verbose:
+        print str(lon.shape[1]) + ' pyticles...'
+        print 'no. pts pytkl: ' + str(len(lon))
+        print 'no. pts drift: ' + str(len(lonD))
+
+    if verbose:
+        print 'calculating statistics...'
+    lonM = np.mean(lon, axis=1)
+    latM = np.mean(lat, axis=1)
+    lonSD = np.std(lon, axis=1)
+    latSD = np.std(lat, axis=1)
+
+    dlonM = lonM - lonM[0]
+    dlatM = latM - latM[0]
+
+    disp = np.sqrt(np.square(dlonM*79868) + np.square(dlatM*111117))
+    dispSD = np.sqrt(np.square(lonSD*79868) + np.square(latSD*111117))
+
+    t = sp.stats.t.ppf(0.95, len(lonM)-1)
+    CI = t*dispSD
+
+    error_lon = np.sqrt(((lonD - lonM) ** 2).mean())
+    error_lat = np.sqrt(((latD - latM) ** 2).mean())
+
+    print error_lon, error_lat
+
+
 def dispersionPlots(pytkl, drift, ncfile, dname, sim, loc, save=False, \
                 write=False, verbose=False, saveplot=None):
     """
