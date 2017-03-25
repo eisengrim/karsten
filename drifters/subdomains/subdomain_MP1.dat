@@ -1,0 +1,4 @@
+SUBDOMAIN MODE = box 
+UNITS = degrees
+TOP BOTTOM = 45.4 45.4
+LEFT RIGHT = -65.55 -65.3

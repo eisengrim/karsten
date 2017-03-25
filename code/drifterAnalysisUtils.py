@@ -2,6 +2,7 @@
 
 import numpy as np
 import pandas as pd
+import scipy.io as sio
 from pyseidon import *
 import scipy.special as sps
 
@@ -96,7 +97,8 @@ def compareBFRIC(drift, debug=False):
     pass
 
 
-def calculateBias(ncfile, files, loc, date, tide_opt=None, debug=False):
+def calculateBias(ncfile, files, loc, date, tide_opt=None, debug=False,
+        self_build=False):
     """
     Compiles necessary data, calculates individual biases and
     takes the mean and standard deviation. Also calculates the
@@ -110,6 +112,7 @@ def calculateBias(ncfile, files, loc, date, tide_opt=None, debug=False):
         - date : simulation date
         - tide_opt : 'ebb' or 'flood' ... returns only drifter data for tide
         - sim_name : name of simulation directory used
+        - self_build : don't use PySeidon Drifter object
     """
 
     if debug:
@@ -150,7 +153,8 @@ def calculateBias(ncfile, files, loc, date, tide_opt=None, debug=False):
             print 'creating drifter object {}...'.format(i)
             print fname
 
-        drift = Drifter(fname, debug=False)
+        if not self_build:
+            drift = Drifter(fname, debug=False)
 
         # tests tide condition
         if tide_opt is not None:
