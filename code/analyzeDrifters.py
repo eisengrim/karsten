@@ -74,8 +74,9 @@ def parseArgs():
             default='0.015', type=str)
     parser._optionals.title = 'optional flag arguments'
     # option to write initial positions
-    parser.add_argument("--write", '-w', help='records data frame of ' \
-            + 'drifters to a CSV file.\n', action="store_true")
+    parser.add_argument("--write", '-w', nargs=1, help='records data frame of ' \
+            + 'drifters to a csv file given path.\n', metavar='outdir', \
+            type=str, default=False)
     parser.add_argument('--tide', '-t', help='adds tidal filter option.\n', nargs=1, \
             choices=('ebb', 'flood', None), default=None)
 
@@ -93,7 +94,7 @@ def parseArgs():
 
     if args.write:
         # add write for plots...
-        print '\tdata will be written to drifter_data_{}.csv...'.format(args.loc[0])
+        print '\tdata will be written to {}...'.format(args.write[0])
 
     return args
 
@@ -310,13 +311,18 @@ if __name__ == '__main__':
 
     # write init loc data to text file
     if args.write:
+        outpath = args.write[0]
+        if not osp.exists(outpath) or not osp.isdir(outpath):
+            os.makedirs(outpath)
         ids=[]
         frames=[]
         for id, d in drift.iteritems():
             ids.append(id)
             frames.append(pd.DataFrame(d))
         data = pd.concat(frames, keys=ids)
-        data.to_csv("drifter_data_{}.csv".format(loc))
+        if obs_dir[-1] is not "/":
+            obs_dir.append("/")
+        data.to_csv(outpath+"_drifter_data_{}.csv".format(loc))
 
         # if debug:
         #     print 'recording initial positions...'
