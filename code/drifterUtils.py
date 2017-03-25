@@ -4,6 +4,11 @@ from datetime import datetime, timedelta
 import numpy as np
 import scipy.io as sio
 import netCDF4 as nc
+import ntpath as ntp
+
+def path_leaf(path):
+    head, tail = ntp.split(path)
+    return tail or ntp.basename(head)
 
 
 def broadcast(arr1, arr2, debug=False):
@@ -32,6 +37,32 @@ def haversine(lon, lat):
 
     return R*c
 
+def checkIDs(name, debug=False):
+    """
+    Checks if there exists more than one drifter in a file.
+
+    input: drifter file name
+    returns: array of slicing indices, else None
+    """
+    try:
+        if debug:
+            print 'loading file {}...'.format(name)
+        drft = sio.loadmat(name, struct_as_record=False, squeeze_me=True)
+
+        if 'vel_drift_index' in drft['water_level'][0][0]._fieldnames:
+            ids = np.zeros(drft['water_level'][0][0].vel_drift_index[0][-1][-1][-1])
+            for i, idxs in enumerate(drft['water_level'][0][0].vel_drift_index[0]):
+                ids[idxs[0][0][0]-1:idx[0][0][-1]-1] = i
+        else:
+            ids = None
+    except KeyError:
+        if 'ID' in drft.keys():
+            ids = drft['ID']
+        else:
+            ids = None
+
+    return ids
+
 
 def driftTimes(name, debug=False):
     """
@@ -50,13 +81,16 @@ def driftTimes(name, debug=False):
     try:
         if debug:
             print 'loading file {}...'.format(name)
-        drft = sio.loadmat(name)
+        drft = sio.loadmat(name, struct_as_record=False, squeeze_me=True)
         times = drft['gps_observation'][0][0][0][0]
     except KeyError:
-        times = drft['time'][0][0][0][0]
+        try:
+            times = drft['time'][0][0][0][0]
+        except IndexError:
+            times = drft['time']
+    # grab the times, sort them, and convert them to strings
 
-    # grab the times and convert them to strings
-    start, end = times[0], times[-1]
+    start, end = np.sort(times)[0], np.sort(times)[-1]
     return start, end
 
 

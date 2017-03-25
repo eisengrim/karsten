@@ -4,7 +4,7 @@
 """
 Filename = analyzeDrifters.py
 Author = Kody Crowell
-Version = 1.4
+Version = 1.5
 
 This code is an updated version of drifterBias.py, tasked with running various
 stats that are returned to be used in the command line, and then plotted.
@@ -29,15 +29,14 @@ from interpolation_utils import *
 import sklearn.preprocessing as skp
 import numpy.linalg as LA
 from scipy.stats.stats import pearsonr
-
+import sys
 # local import
 from createColorMap import createColorMap
-from drifterUtils import dn2dt, driftTimes
+from drifterUtils import dn2dt, driftTimes, path_leaf
 from drifterAnalysisUtils import *
 
 PATH2SIM="/EcoII/acadia_uni/workspace/simulated/FVCOM/dngridCSR/drifter_runs/"
 PATH2OBS="/EcoII/acadia_uni/workspace/observed/"
-
 
 def parseArgs():
     """
@@ -45,30 +44,39 @@ def parseArgs():
     a region tag and a save path.
     """
 
-    parser = arp.ArgumentParser(prog='drifterBias.py', description="Opens " \
-            + "any FVCOM files and drifter files, calculates statistics "\
-            + "and generates plots.")
+    parser = arp.ArgumentParser(prog='analyseDrifters.py', description="Opens " \
+            + "any FVCOM files and drifter files, calculates statistics, "\
+            + "and generates plots.\n")
     # adds command line optional arguments
     parser.add_argument("--debug", "-v", "--verbose", action="store_true", \
-            help="increases output verbosity.")
+            help="increases output verbosity.\n")
     parser.add_argument("-V", '--version', action='version', version='v1.4')
     require = parser.add_argument_group('required')
     require.add_argument("--loc", '-l', help="define the region to operate "\
-            + "within.", nargs=1, choices=('GP', 'DG', 'PP'), required=True)
-    parser.add_argument("--dir", '-D', nargs='*', help="defines an FVCOM " \
-            + "directory. Name is in the form YYYY_Mmm_DD_3D", \
-            metavar='dirname', type=str)
+            + "within.\n", nargs=1, choices=('GP', 'DG', 'PP', 'MP'), required=True)
+    parser.add_argument("--date", '-D', nargs='*', help="gives an FVCOM " \
+            + "run date. Name is in the form YYYY_MM_DD.\n",\
+            metavar='y-m-d', type=str)
     parser.add_argument("--drifter",'-d', nargs='*', help="defines one or " \
-            + "more matlab drifter files to be read.", metavar='matfile', \
+            + "more matlab drifter files to be read.\n", metavar='matfile', \
             type=str, default=False)
+    parser.add_argument("--path2obs", "-o", nargs='*', help="defines one or "\
+            + "more observed drifter paths.\n", metavar="p2o",
+            type=str, default=False, required=True)
+    parser.add_argument("--bounds", "-b", nargs=4, help="defines a bounding "\
+            + "box for the netcdf fvcom file. takes in four arguments, "\
+            + "min lon max lon min lat max lat", default=False)
+    parser.add_argument("--path2sim", '-p', nargs='*', help="defines one " \
+            + "or more paths to simulated fvcom ncfile runs.\n", metavar='p2s',
+            type=str, default=False, required=True)
     parser.add_argument("--bfric", '-B', help="select a bottom " \
-            + "roughness.", nargs=1, choices=('0.009','0.012','0.015','0.020'),\
-            default='0.015', required=True, type=str)
+            + "roughness.\n", nargs=1, choices=('0.009','0.012','0.015','0.020'),\
+            default='0.015', type=str)
     parser._optionals.title = 'optional flag arguments'
     # option to write initial positions
     parser.add_argument("--write", '-w', help='records data frame of ' \
-            + 'drifters to a CSV file.', action="store_true")
-    parser.add_argument('--tide', '-t', help='adds tidal option', nargs=1, \
+            + 'drifters to a CSV file.\n', action="store_true")
+    parser.add_argument('--tide', '-t', help='adds tidal filter option.\n', nargs=1, \
             choices=('ebb', 'flood', None), default=None)
 
     args = parser.parse_args()
@@ -85,7 +93,7 @@ def parseArgs():
 
     if args.write:
         # add write for plots...
-        print '\tinitial locations to be recorded...'
+        print '\tdata will be written to drifter_data_{}.csv...'.format(args.loc[0])
 
     return args
 
@@ -94,17 +102,20 @@ def setOptions(args):
     """
     Interprets the options returned by argument parser.
     """
-    obs_dir = PATH2OBS + args.loc[0] + '/Drifter/'
+    obs_dir = args.path2obs[0]
 
     # look for observed data
     if args.debug:
-        print 'looking for drifter directories...'
+        print 'looking for drifter directories in {}...'.format(obs_dir)
 
     if not osp.exists(obs_dir) or not osp.isdir(obs_dir):
         sys.exit('drifter directory not found.')
     elif args.debug:
         print 'drifter directory successfully found.'
         print '\tgathering all files...'
+
+    if obs_dir[-1] is not "/":
+        obs_dir.append("/")
 
     if args.drifter:
         if args.drifter[0].endswith('.dat') or args.drifter[0].endswith('.txt'):
@@ -123,23 +134,17 @@ def setOptions(args):
     if args.debug:
         print 'looking for fvcom directory(s)...'
 
-    path2sim = PATH2SIM + 'BFRIC_' + args.bfric[0] + '/'
-
-    # locate given fvcom file
-    if args.dir:
-        dirs = args.dir
+    if args.path2sim[0].endswith('.dat') or args.path2sim[0].endswith('.txt'):
+        simpath = np.loadtxt(args.path2sim[0])
     else:
-        dirs = os.listdir(path2sim + args.loc[0] + '/')
+        simpath = [file for file in args.path2sim]
 
-    sim_path = [path2sim + args.loc[0] + '/' + file + '/output/subdomain_' \
-                + args.loc[0] + '1_0001.nc' for file in dirs]
-
-    for path in sim_path:
+    for path in simpath:
         if not osp.exists(path) or not osp.isfile(path):
             print '\tfvcom file {} is not found. removing...'.format(path)
-            sim_path.remove(path)
+            simpath.remove(path)
 
-    if len(sim_path) == 0:
+    if len(simpath) == 0:
         sys.exit('no ncfiles found.')
     elif args.debug:
         print '\tnc files found.'
@@ -149,7 +154,23 @@ def setOptions(args):
     else:
         tide = None
 
-    return args.loc[0], sim_path, obs_dir, matfiles, tide
+    if args.date:
+        date = [d for d in args.date]
+        if len(date) != len(simpath):
+            sys.exit("number of dates given must match number of fvcom runs!")
+    else:
+        date = None
+
+    if args.bounds:
+        bounds = [b for b in args.bounds]
+        if bounds[0] >= bounds[1]:
+            sys.exit("bad lons in bounding box.")
+        if bounds[2] >= bounds[3]:
+            sys.exit("bad lats in bounding box.")
+    else:
+        bounds=[]
+
+    return args.loc[0], simpath, obs_dir, matfiles, tide, date, bounds
 
 
 if __name__ == '__main__':
@@ -161,12 +182,13 @@ if __name__ == '__main__':
     args = parseArgs()
     debug = args.debug
 
-    loc, sim_path, obs_dir, obs_files, tide = setOptions(args)
+    loc, sim_path, obs_dir, obs_files, tide, date, ax = setOptions(args)
 
     if debug:
         print '\n--parameters selected--'
         print 'location: ', loc, '\nsim_path: ', sim_path, \
-                '\nobs_path: ', obs_dir, '\ntide: ', str(tide)
+                '\nobs_path: ', obs_dir, '\ntide: ', str(tide), \
+                '\ndate: ', date, '\nbounds: ', ax
 
     # initialize cumulative data arrays
     drifters = {}
@@ -191,10 +213,10 @@ if __name__ == '__main__':
     all_err_dir = []
     num_drift = 0
 
-    for dir_name in sim_path:
+    for k, dir_name in enumerate(sim_path):
         if debug:
             print '\nloading fvcom object...'
-        ncfile = FVCOM(dir_name, debug=False)
+        ncfile = FVCOM(dir_name, ax=ax, debug=False)
         if debug:
             print 'ncfile for {} loaded.'.format(dir_name)
 
@@ -220,16 +242,23 @@ if __name__ == '__main__':
         if not files:
             sys.exit('drifters given are not within model runtime window.')
 
+        if date is None:
+            date = [None]
+
         drift, mean, std, speedO, speedS, uspdO, uspdS, bias, lat, lon, \
             lon0, lat0, ubias, depth, erru, errv, err_mag, err_dir, avg_d \
-            = calculateBias(ncfile, files, loc, date=dir_name[82:96], tide_opt=tide, debug=debug)
+            = calculateBias(ncfile, files, loc, date=date[k], tide_opt=tide,
+                    debug=debug)
 
         if debug:
             print 'adding to cumulative data...'
 
         # extracts the name of the directory without including the whole path
-        drifters[dir_name[82:96]] = drift
-        all_date.extend(dir_name[82:93])
+        # drifters[dir_name[82:96]] = drift
+        # all_date.extend(dir_name[82:93])
+        # -3 for '.nc' and -4 for '.mat'
+        drifters[path_leaf(dir_name)[:-3]] = drift
+        all_date.extend(date)
         all_mean.extend(mean)
         all_std.extend(std)
         all_speedS.extend(speedS)
@@ -287,7 +316,7 @@ if __name__ == '__main__':
             ids.append(id)
             frames.append(pd.DataFrame(d))
         data = pd.concat(frames, keys=ids)
-        data.to_csv("data.csv")
+        data.to_csv("drifter_data_{}.csv".format(loc))
 
         # if debug:
         #     print 'recording initial positions...'
