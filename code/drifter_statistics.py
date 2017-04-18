@@ -10,12 +10,14 @@ import matplotlib.pyplot as plt
 import matplotlib.tri as Tri
 import matplotlib.ticker as tic
 import seaborn as sns
-from pyseidon import *
+
+# pyseidon
+from pyseidon_dvt import *
 
 # local import
-from createColorMap import createColorMap
-from utilities import *
-from drifterAnalysisUtils import *
+from color_map import createColorMap
+from utils import *
+from drifter_plots import *
 
 def calculate_stats(ncfile, fname, loc, date, tide_opt=None, outpath=None):
     """
@@ -75,8 +77,7 @@ def calculate_stats(ncfile, fname, loc, date, tide_opt=None, outpath=None):
     datetimes = np.asarray([dn2dt(time) for time in mTimes])
 
     uspeedO = np.sqrt(oU*oU + oV*oV)
-    if not uspeedS.shape == uspeedO.shape:
-        continue
+    print uspeedS.shape, uspeedO.shape
 
     speedO = uspeedO * np.sign(oV)
     speedS = uspeedS * np.sign(mV)

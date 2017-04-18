@@ -5,11 +5,10 @@ from datetime import datetime, timedelta
 import netCDF4 as nc
 
 # local imports - might interfere if using a different pyseidon
-from drifterPlotUtils import *
-from drifterAnalysisUtils import *
-from drifterUtils import *
-from plotParticles import *
-from createColorMap import createColorMap
+from drifter_statistics import *
+from drifter_plots import *
+from utils import *
+from color_map import createColorMap
 
 # load pyseidon
 from pyseidon_dvt import *

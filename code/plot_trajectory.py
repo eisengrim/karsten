@@ -11,9 +11,9 @@ import os.path as osp
 import os
 import sys
 
-from utilities import dn2dt, checkIDs
-from createColorMap import *
-from plotting_utils import *
+from utils import *
+from color_map import *
+from drifter_plots import *
 
 def trajectoryPlots(ncfile, drift, loc, date, \
                 fname=None, tight=False, debug=False, \

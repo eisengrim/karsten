@@ -11,9 +11,9 @@ import os.path as osp
 import os
 import sys
 
-from utilities import dn2dt, checkIDs
-from createColorMap import *
-from plotting_utils import *
+from utils import *
+from color_map import *
+from drifter_plots import *
 
 def varCorr(var1, var2, xlabel='', ylabel='', title='', debug=False, plot=False):
     """
