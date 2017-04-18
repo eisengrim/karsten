@@ -40,49 +40,34 @@ def varCorr(var1, var2, xlabel='', ylabel='', title='', debug=False, plot=False)
     return pearsonr(var1, var2)
 
 
-def spatialError(glon, glat, lon, lat, obs, sim, trinodes, debug=False):
+def spatialError(glon, glat, lon, lat, obs, sim, trinodes):
     """
     Creates a spatially-varying plot of the errors.
     """
-    if debug:
-        print '\tstarting spatial plot...'
-    if debug:
-        print '\tcomputing bounding boxes...'
     bounds = [np.min(glon), np.max(glon), np.min(glat), np.max(glat)]
-
-    if debug:
-        print '\tcomputing colors...'
 
     err = obs - sim
 
-    if debug:
-        print '\tcreating map...'
-        print '\tcreating scatter plot...'
-	f=plt.figure()
-	ax = f.add_axes([.125,.1,.775,.8])
-	ax.triplot(glon, glat, trinodes, zorder=10, lw=10)
-	clim=np.percentile(err,[5,95])
-    if debug:
-        print '\tcreating color bar...'
+    f=plt.figure()
+    ax = f.add_axes([.125,.1,.775,.8])
+    ax.triplot(glon, glat, trinodes, zorder=10, lw=10)
+    clim=np.percentile(err,[5,95])
 
-	cb = ax.scatter(lon, lat, c=err, s=10, edgecolor='None', \
-            vmin=clim[0], vmax=clim[1], zorder=20)
+    cb = ax.scatter(lon, lat, c=err, s=10, edgecolor='None', \
+        vmin=clim[0], vmax=clim[1], zorder=20)
     plt.colorbar(cb)
-    if debug:
-        print '\tcreating color bar...'
 
     return f
 
 
-def plotTimeSeries(fig, dt, var, loc, label=['',''], title='', bg='#f5deb3', \
-                styles=['b--', '#8B0000'], ylab='', where=121, axx=None, \
-                axy=None, legend=True, debug=False):
+def plotTimeSeries(dt, var, loc, label=['',''], title='', bg='#f5deb3', \
+                styles=['b--', '#8B0000'], ylab='', where=111, axx=None, \
+                axy=None, legend=True):
     """
     Creates a comparative var vs. time graph from simulated and observed
     arrays. This function is also passed an existing figure object to plot on.
 
     input:
-        - fig : figure object
         - datetimes : two datetimes
         - vars : two variables to plot
         - loc : location tag
@@ -98,10 +83,7 @@ def plotTimeSeries(fig, dt, var, loc, label=['',''], title='', bg='#f5deb3', \
     return:
         - fig, ax
     """
-    if debug:
-        print '\tcreating subplot...'
-        print '\tconfiguring axes...'
-
+    fig = plt.figure()
     # add subplot and configure axes
     if axx or axy:
         if axx:
@@ -110,10 +92,6 @@ def plotTimeSeries(fig, dt, var, loc, label=['',''], title='', bg='#f5deb3', \
             ax = fig.add_subplot(where, axisbg=bg, sharey=axy)
     else:
         ax = fig.add_subplot(where, axisbg=bg)
-
-    if debug:
-        print 'shapes are var: ({}, {}) t: ({}, {})...'.format(len(var[0]), \
-                    len(var[1]), len(dt[0]), len(dt[1]))
 
     if len(var[0]) < 5 or len(var[1]) < 5:
         return False
@@ -146,10 +124,6 @@ def plotTimeSeries(fig, dt, var, loc, label=['',''], title='', bg='#f5deb3', \
 
     plt.hold('on')
 
-    if debug:
-        print '...time series successfully plotted.'
-
     return fig
-
 
 

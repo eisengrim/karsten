@@ -8,7 +8,7 @@ import seaborn as sns
 import sys
 
 def createColorMap(var, lon, lat, trinodes, nnode, nelem, title='', label='', \
-                mesh=True, bounds=[], debug=True, c='jet'):
+                mesh=True, bounds=[], debug=True, c='jet', where=111):
     """
     2D colormap plot of a given variable and mesh. Customized to add the plot to an
     existing figure.
@@ -69,7 +69,7 @@ def createColorMap(var, lon, lat, trinodes, nnode, nelem, title='', label='', \
 
     fig = plt.figure(figsize=(18,10))
     plt.rc('font', size='22')
-    ax = fig.add_subplot(111, aspect=(1.0/np.cos(np.mean(lat) * np.pi/180.0)))
+    ax = fig.add_subplot(where, aspect=(1.0/np.cos(np.mean(lat) * np.pi/180.0)))
 
     if debug:
         print '\tcomputing colormap...'

@@ -113,4 +113,23 @@ def calculate_stats(ncfile, fname, loc, date, tide_opt=None, outpath=None):
     #         obs_dir.append("/")
     #     data.to_csv(outpath+"_drifter_data_{}.csv".format(loc))
 
+    datetimes = np.asarray([dn2dt(time) for time in mTimes])
+
+    # For now, separate the two plots.
+    result = plotTimeSeries(fig2, np.reshape(np.tile(datetimes,2),\
+            (2, len(datetimes))), np.vstack((speedS, speedO)), \
+            loc, label=['Simulated','Observed'], where=111, \
+            title=loc + ' Drifter Speeds for ' + date,  \
+            ylab='Speed (m/s)')
+
+    if plot:
+        plt.show()
+    if savepath:
+        fig.savefig(savepath + '_traj.png')
+        result.savefig(savepath + '_ts.png')
+        if debug:
+            print '...plot saved to: ', savepath
+
+    # clear the figure window
+    # plt.close()
 
