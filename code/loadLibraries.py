@@ -6,7 +6,7 @@ import netCDF4 as nc
 
 # local imports - might interfere if using a different pyseidon
 from drifter_statistics import *
-from drifter_plots import *
+from plot_utils import *
 from utils import *
 from color_map import createColorMap
 

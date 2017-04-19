@@ -7,8 +7,9 @@ import matplotlib.tri as Tri
 import seaborn as sns
 import sys
 
-def createColorMap(var, lon, lat, trinodes, nnode, nelem, title='', label='', \
-                mesh=True, bounds=[], debug=True, c='jet', where=111):
+def createColorMap(var, lon, lat, trinodes, title='', label='', \
+                mesh=True, bounds=[], c='jet', where=111, figsize=(6,5), \
+                fontsize='22'):
     """
     2D colormap plot of a given variable and mesh. Customized to add the plot to an
     existing figure.
@@ -17,8 +18,6 @@ def createColorMap(var, lon, lat, trinodes, nnode, nelem, title='', label='', \
         - var = gridded variable, 1D numpy array (nelem or nnode)
         - lon, lat = array of lon, lat coordinates
         - trinodes = triangulation node indices
-        - nnode, nelem = number of nodes and elements
-        - title = plot title, string
         - mesh = boolean, True with mesh, False without mesh
         - bounds = list, constricted region subdomain in form of
             [lon.min, lon.max, lat.min, lat.max]
@@ -27,36 +26,26 @@ def createColorMap(var, lon, lat, trinodes, nnode, nelem, title='', label='', \
         - figure for future plotting
     """
 
-    if debug:
-        print '\tplotting grid...'
     # figure if var has nele or nnode dimensions
-    if var.shape[0] == nelem:
-        dim = nelem
-    elif var.shape[0] == nnode:
-        dim = nnode
+    if var.shape[0] == trinodes.shape[0]:
+        dim = trinodes.shape[0]
+    elif var.shape[0] == lon.shape[0]:
+        dim = lon.shape[0]
     else:
         sys.exit('variable has the wrong dimension, shape not equal to grid ' \
                 + 'nummber of elements or nodes')
 
     # bounding box nodes, elements and variables
-    if debug:
-        print '\tcomputing bounding box...'
     if bounds:
         bb = bounds
     else:
         bb = [lon.min(), lon.max(), lat.min(), lat.max()]
 
     # mesh triangle
-    if debug:
-        print '\tcomputing triangulation...'
     tri = Tri.Triangulation(lon, lat, triangles=trinodes)
 
     # setting limits and levels of colormap
-    if debug:
-        print '\tcomputing cmin...'
     cmin = var[:].min()
-    if debug:
-        print '\tcomputing cmax...'
     cmax = var[:].max()
     step = (cmax-cmin) / 50.0
 
@@ -64,15 +53,10 @@ def createColorMap(var, lon, lat, trinodes, nnode, nelem, title='', label='', \
     levels = np.arange(cmin, (cmax+step), step)
 
     # define figure window
-    if debug:
-        print '\tcreating subplot...'
-
-    fig = plt.figure(figsize=(18,10))
-    plt.rc('font', size='22')
+    fig = plt.figure(figsize=figsize)
+    plt.rc('font', size=fontsize)
     ax = fig.add_subplot(where, aspect=(1.0/np.cos(np.mean(lat) * np.pi/180.0)))
 
-    if debug:
-        print '\tcomputing colormap...'
     if c == 'jet':
         cmap = plt.cm.jet
     elif c == 'earth':
@@ -92,8 +76,6 @@ def createColorMap(var, lon, lat, trinodes, nnode, nelem, title='', label='', \
     scale = 1
 
     # ticker for coordinate degree axis
-    if debug:
-        print '\tconfiguring axis...'
     ticks = tic.FuncFormatter(lambda lon, pos: '{0:g}'.format(lon/scale))
     ax.xaxis.set_major_formatter(ticks)
     ax.yaxis.set_major_formatter(ticks)
@@ -103,9 +85,6 @@ def createColorMap(var, lon, lat, trinodes, nnode, nelem, title='', label='', \
     plt.title(title)
 
     plt.hold('on')
-
-    if debug:
-        print '...colormap passed.'
 
     return fig
 

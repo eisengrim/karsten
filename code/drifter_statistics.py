@@ -17,39 +17,38 @@ from pyseidon_dvt import *
 # local import
 from color_map import createColorMap
 from utils import *
-from drifter_plots import *
+from plot_utils import *
+from location_bounds import get_bounds
 
-def calculate_stats(ncfile, fname, loc, date, tide_opt=None, outpath=None):
+def calculate_stats(ncfile, fname, loc, date, tide_opt=None, plot=False,
+        tight=False, outpath=None):
     """
     Given a Drifter object from PySeidon, statistics are computed based on
     the closest spatial and temporal points to an FVCOM object.
+
+    Takes either two filename strings or two PySeidon objects
     """
 
-    mlon = ncfile.Grid.lon
-    mlat = ncfile.Grid.lat
-    mlonc = ncfile.Grid.lonc
-    mlatc = ncfile.Grid.latc
+    if type(ncfile) == str:
+        model = FVCOM(ncfile, debug=False)
+        drift = Drifter(fname, debug=False)
+    else:
+        model = ncfile
+        drift = fname
 
-    filename = path_leaf(fname)[:-4]
+    mlon = model.Grid.lon[:]
+    mlat = model.Grid.lat[:]
+    mlonc = model.Grid.lonc[:]
+    mlatc = model.Grid.latc[:]
 
-    # create drifter object
-    drift = Drifter(fname, debug=False)
-    model = FVCOM(ncfile, debug=False)
+    mTimes = model.Variables.matlabTime[:]
+    oTimes = drift.Variables.matlabTime[:]
 
     # find the relevant time window to work in
-    mTimes = model.Variables.matlabTime[:]
     mStart, mEnd = float(mTimes[0]), float(mTimes[-1])
-
-    # print 'model time is from {} to {}.'.format(mStart, mEnd)
-    # from given drifter files, find files in fvcom runtime window
-    files = []
-    for matfile in obs_files:
-        dStart, dEnd = driftTimes(matfile, debug=debug)
-        dStart, dEnd = float(dStart), float(dEnd)
-        if dStart > mStart and mEnd > dEnd:
-            files.append(matfile)
-    if not files:
-        sys.exit('drifters given are not within model runtime window.')
+    oStart, oEnd = float(oTimes[0]), float(oTimes[-1])
+    if oStart < mStart or mEnd < oEnd:
+        sys.exit('drifter not within model runtime window.')
 
     # tests tide condition
     try:
@@ -62,33 +61,32 @@ def calculate_stats(ncfile, fname, loc, date, tide_opt=None, outpath=None):
     if tide_opt is not None:
         tide_idx = np.squeeze(np.argwhere(tide == tide_opt))
 
-    idx_s, idx_t = findClosestInds(drift, ncfile)
+    # finds closest points
+    idx_s = closest_dist(drift.Variables.lon, drift.Variables.lat, \
+                model.Grid.lonc, model.Grid.latc)
+    idx_t = closest_vals(drift.Variables.matlabTime, model.Variables.matlabTime)
+
+    # collect indexed variables
     mTimes = mTimes[idx_t]
-    oTimes = drift.Variables.matlabTime
     oU = drift.Variables.u
     oV = drift.Variables.v
     mU = model.Variables.u[idx_t, 0, idx_s]
     mV = model.Variables.v[idx_t, 0, idx_s]
+
     olon = drift.Variables.lon
     olat = drift.Variables.lat
 
     # calculate relevant statistics
-    uspeedS = np.sqrt(mU*mU + mV*mV)
     datetimes = np.asarray([dn2dt(time) for time in mTimes])
+    speedS = np.sqrt(mU*mU + mV*mV)
+    speedO = np.sqrt(oU*oU + oV*oV)
 
-    uspeedO = np.sqrt(oU*oU + oV*oV)
-    print uspeedS.shape, uspeedO.shape
-
-    speedO = uspeedO * np.sign(oV)
-    speedS = uspeedS * np.sign(mV)
-
-    diffs = np.subtract(uspeedS, uspeedO)
-    udiffs = np.subtract(speedS, speedO)
+    diffs = np.subtract(speedS, speedO)
     erru = np.subtract(mU, oU)
     errv = np.subtract(mV, oV)
     err_mag = np.sqrt(erru**2 + errv**2)
     err_dir = np.arctan(np.divide(errv, erru))/np.pi * 180
-    rmse = np.sqrt(np.mean((uspeedS-uspeedO)*(uspeedS-uspeedO)))
+    rmse = np.sqrt(np.mean((speedS-speedO)*(speedS-speedO)))
 
     try:
         beta = drift.Data['water_level'].beta
@@ -97,39 +95,43 @@ def calculate_stats(ncfile, fname, loc, date, tide_opt=None, outpath=None):
 
     try:
         ind = [np.argmin(np.abs(drift.Data['velocity'].vel_time - x)) \
-            for x in valid.Variables.struct['mod_time']]
+            for x in mTimes]
         alpha = drift.Data['velocity'].alpha[ind]
     except:
         alpha = drift.Data['tide_time']
 
-    # if outpath:
-    #     ids=[]
-    #     frames=[]
-    #     for id, d in drift.iteritems():
-    #         ids.append(id)
-    #         frames.append(pd.DataFrame(d))
-    #     data = pd.concat(frames, keys=ids)
-    #     if obs_dir[-1] is not "/":
-    #         obs_dir.append("/")
-    #     data.to_csv(outpath+"_drifter_data_{}.csv".format(loc))
-
-    datetimes = np.asarray([dn2dt(time) for time in mTimes])
-
-    # For now, separate the two plots.
-    result = plotTimeSeries(fig2, np.reshape(np.tile(datetimes,2),\
-            (2, len(datetimes))), np.vstack((speedS, speedO)), \
-            loc, label=['Simulated','Observed'], where=111, \
-            title=loc + ' Drifter Speeds for ' + date,  \
-            ylab='Speed (m/s)')
+    if outpath:
+        ids=[]
+        frames=[]
+        for id, d in drift.iteritems():
+            ids.append(id)
+            frames.append(pd.DataFrame(d))
+        data = pd.concat(frames, keys=ids)
+        if obs_dir[-1] is not "/":
+            obs_dir.append("/")
+        data.to_csv(outpath+"_drifter_data_{}.csv".format(loc))
 
     if plot:
-        plt.show()
-    if savepath:
-        fig.savefig(savepath + '_traj.png')
-        result.savefig(savepath + '_ts.png')
-        if debug:
-            print '...plot saved to: ', savepath
+        #model.Util3D.velo_norm()
+        #vnorm = model.Variables.velo_norm[:]
+        vnorm = None
 
-    # clear the figure window
-    # plt.close()
+        if tight:
+            box = get_bounds(loc)
+        else:
+            box = []
+
+        fig1 = trajectoryPlot(model.Variables.u, model.Variables.v, \
+                mlon, mlat, model.Variables.matlabTime, \
+                olon, olat, oTimes, model.Grid.trinodes, vel_norm = vnorm,\
+                label = "Mean Velocity Norm (m/s)", bounds=box, \
+                title_main = loc + " Trajectory for " + date)
+
+        fig2 = plotTimeSeries(np.reshape(np.tile(datetimes,2),\
+                (2, len(datetimes))), np.vstack((speedO, speedS)), \
+                loc, label=['Observed', 'Simulated'], where=111, \
+                title=loc + ' Drifter Speeds for ' + date,  \
+                ylab='Speed (m/s)', style="style_drift.json", lines=['o','^'])
+
+        plt.show()
 

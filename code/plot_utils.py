@@ -4,18 +4,22 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats.stats import pearsonr
 from matplotlib.dates import DateFormatter
-import numexpr as ne
+import matplotlib as mpl
 import seaborn as sns
 from datetime import datetime
 import os.path as osp
 import os
 import sys
+import json
 
+# local imports
 from utils import *
-from color_map import *
-from drifter_plots import *
+from color_map import createColorMap
+from velo_norm import velo_norm
 
-def varCorr(var1, var2, xlabel='', ylabel='', title='', debug=False, plot=False):
+
+def varCorr(var1, var2, xlabel='', ylabel='', title='', where=111, \
+        style=None, plot=False):
     """
     Calculates the correlation between two given variables, so long as they
     are the same size (Uses the Pearson product-moment correlation coefficient).
@@ -24,7 +28,11 @@ def varCorr(var1, var2, xlabel='', ylabel='', title='', debug=False, plot=False)
     Returns the Pearson coefficient and the two-tailed p-value.
     """
     fig = plt.Figure()
-    ax = fig.add_subplot(111)
+    if style is not Nont:
+        s = json.load(open(style))
+        mpl.rcParams.update(s)
+
+    ax = fig.add_subplot(where)
 
     ax.scatter(var1, var2)
     if title:
@@ -60,9 +68,9 @@ def spatialError(glon, glat, lon, lat, obs, sim, trinodes):
     return f
 
 
-def plotTimeSeries(dt, var, loc, label=['',''], title='', bg='#f5deb3', \
-                styles=['b--', '#8B0000'], ylab='', where=111, axx=None, \
-                axy=None, legend=True):
+def plotTimeSeries(dt, var, loc, label=['',''], title='', \
+                style=None, ylab='', where=111, lines=['--','-'],\
+                axx=None, axy=None, legend=True):
     """
     Creates a comparative var vs. time graph from simulated and observed
     arrays. This function is also passed an existing figure object to plot on.
@@ -75,8 +83,8 @@ def plotTimeSeries(dt, var, loc, label=['',''], title='', bg='#f5deb3', \
         - axy : y axis to share
         - label : label for legend
         - title : title of plot
-        - bg : hex code for background
-        - styles : line styles
+        - style : a json filename for mpl styling
+        - lines : linestyles
         - ylab : label of var axis
         - legend : boolean. add legend.
         - where : location of plot on fig (3 digit int)
@@ -84,22 +92,22 @@ def plotTimeSeries(dt, var, loc, label=['',''], title='', bg='#f5deb3', \
         - fig, ax
     """
     fig = plt.figure()
+
+    if style is not None:
+        s = json.load(open(style))
+        mpl.rcParams.update(s)
     # add subplot and configure axes
     if axx or axy:
         if axx:
-            ax = fig.add_subplot(where, axisbg=bg, sharex=axx)
+            ax = fig.add_subplot(where, sharex=axx)
         if axy:
-            ax = fig.add_subplot(where, axisbg=bg, sharey=axy)
+            ax = fig.add_subplot(where, sharey=axy)
     else:
-        ax = fig.add_subplot(where, axisbg=bg)
+        ax = fig.add_subplot(where)
 
-    if len(var[0]) < 5 or len(var[1]) < 5:
-        return False
-    # if a value error is encountered due to the data in pyseidon,
-    # do not plot, ignore and move on...
     try:
-        ax.plot(dt[0], var[0], styles[0], label=label[0], linewidth=2)
-        ax.plot(dt[1], var[1], styles[1], label=label[1], linewidth=2)
+        ax.plot(dt[0], var[0], lines[0], label=label[0])
+        ax.plot(dt[1], var[1], lines[1], label=label[1])
     except ValueError:
         return False
 
@@ -127,3 +135,36 @@ def plotTimeSeries(dt, var, loc, label=['',''], title='', bg='#f5deb3', \
     return fig
 
 
+def trajectoryPlot(u, v, lon, lat, mtime, x, y, otime, trinodes, \
+                vel_norm=None, label=None, title_main=None, bounds=[]):
+    """
+    Compiles necessary data, creates plots and saves / shows them all. The plot is
+    a spatially varying color map of speed with a drifter trajectory superposed and
+    a comparitive speed-time plot for each drifter in the given directory.
+
+    input:
+        - bounds : array of min max lon lat *priority over tight*
+    returns:
+        - fig1, a trajectory, fig2, a timeseries
+    """
+    sns.set(font="serif")
+
+    # computes variable norm
+    if not vel_norm:
+        vel_norm = velo_norm(u, v)
+
+    # creates drifter object window for flow map
+    win1 = (np.abs(mtime-otime.min())).argmin()
+    win2 = (np.abs(mtime-otime.max())).argmin()
+
+    # averages velocity norm over flood or ebb cycle within drifter window
+    tideNorm = np.mean(vel_norm[win1:win2,:,:], 0)
+
+    # create spatially varying color map of mean velocity norm
+    fig = createColorMap(tideNorm[0,:], lon, lat, trinodes, \
+            mesh=False, bounds=bounds, title=title_main, \
+            label=label, where=111)
+
+    plt.scatter(x,y)
+
+    return fig
