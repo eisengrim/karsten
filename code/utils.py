@@ -89,6 +89,11 @@ def drift_times(name, debug=False):
             times = drft['time'][0][0][0][0]
         except IndexError:
             times = drft['time']
+    except TypeError:
+        try:
+            times = drft['velocity'].vel_time[:]
+        except KeyError:
+            times = drft['gps_observation'].gps_time[:]
     # grab the times, sort them, and convert them to strings
 
     start, end = np.sort(times)[0], np.sort(times)[-1]

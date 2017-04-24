@@ -8,8 +8,8 @@ import seaborn as sns
 import sys
 
 def createColorMap(var, lon, lat, trinodes, title='', label='', \
-                mesh=True, bounds=[], c='jet', where=111, figsize=(6,5), \
-                fontsize='22'):
+                mesh=True, bounds=[], c='jet', where=111, figsize=(18,10), \
+                fontsize='22', hide=False):
     """
     2D colormap plot of a given variable and mesh. Customized to add the plot to an
     existing figure.
@@ -76,9 +76,14 @@ def createColorMap(var, lon, lat, trinodes, title='', label='', \
     scale = 1
 
     # ticker for coordinate degree axis
-    ticks = tic.FuncFormatter(lambda lon, pos: '{0:g}'.format(lon/scale))
-    ax.xaxis.set_major_formatter(ticks)
-    ax.yaxis.set_major_formatter(ticks)
+    if hide:
+        ax.set_yticklabels([])
+        ax.set_xticklabels([])
+    else:
+        ticks = tic.FuncFormatter(lambda lon, pos: '{0:g}'.format(lon/scale))
+        ax.xaxis.set_major_formatter(ticks)
+        ax.yaxis.set_major_formatter(ticks)
+
     ax.set_xlim([bb[0], bb[1]])
     ax.set_ylim([bb[2], bb[3]])
     ax.grid()
