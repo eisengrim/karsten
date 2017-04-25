@@ -23,7 +23,7 @@ from plot_utils import *
 from location_bounds import get_bounds
 
 def calculate_stats(ncfile, fname, loc, date, tide_opt=None, plot=False,
-        tight=False, outpath=None, multi=False, tt_window=None):
+        tight=False, outpath=None, multi=False):
     """
     Given a Drifter object from PySeidon, statistics are computed based on
     the closest spatial and temporal points to an FVCOM object.
@@ -47,8 +47,6 @@ def calculate_stats(ncfile, fname, loc, date, tide_opt=None, plot=False,
     # get model lon and lats
     mlon = model.Grid.lon[:]
     mlat = model.Grid.lat[:]
-    mlonc = model.Grid.lonc[:]
-    mlatc = model.Grid.latc[:]
 
     # get times and datetimes
     mTimes = model.Variables.matlabTime[:]
@@ -123,24 +121,9 @@ def calculate_stats(ncfile, fname, loc, date, tide_opt=None, plot=False,
     tide[alpha > 0.5] = "ebb"
     tide = np.asarray(tide)
 
-    # overrides tt_window if selected
-    if tide_opt is "flood":
-        tt_window = [0, 0.5]
-    elif tide_opt is "ebb":
-        tt_window = [0.5, 1]
-
-    # subset based on tide
-    # rather than by tide, may subset using a specified alpha window
-    if tt_window is not None:
-        a1 = np.squeeze(np.argwhere(alpha >= tt_window[0]))
-        a2 = np.squeeze(np.argwhere(alpha <= tt_window[1]))
-        tide_idx = np.intersect1d(a1, a2)
-
-        if tide_idx == []:
-            return False
-
     oTimes = oTimes[idx]
     odatetimes = odatetimes[idx]
+
     # finds closest points
     idx_s = closest_dist(drift.Variables.lon[idx], drift.Variables.lat[idx], \
                 model.Grid.lonc, model.Grid.latc)
@@ -151,6 +134,8 @@ def calculate_stats(ncfile, fname, loc, date, tide_opt=None, plot=False,
     datetimes = np.asarray([dn2dt(time) for time in mTimes])
     oU = drift.Variables.u[idx]
     oV = drift.Variables.v[idx]
+    mlonc = model.Grid.lonc[idx_s]
+    mlatc = model.Grid.latc[idx_s]
     mU = model.Variables.u[idx_t, 0, idx_s]
     mV = model.Variables.v[idx_t, 0, idx_s]
     olon = drift.Variables.lon[idx]
@@ -170,21 +155,6 @@ def calculate_stats(ncfile, fname, loc, date, tide_opt=None, plot=False,
     rbias = np.mean(diffs)
     rerru = erru / mU
     rerrv = errv / mV
-
-    # how to deal with beta
-    if tt_window is not None:
-        mTimes = mTimes[tide_idx]
-        datetimes = datetimes[tide_idx]
-        oTimes = oTimes[tide_idx]
-        odatetimes = odatetimes[tide_idx]
-        oU = oU[tide_idx]
-        oV = oV[tide_idx]
-        mU = mU[tide_idx]
-        mV = mV[tide_idx]
-        olon = olon[tide_idx]
-        olat = olat[tide_idx]
-        alpha = alpha[tide_idx]
-        tide = tide[tide_idx]
 
     # new date for printing
     date = datetime(int(date[0:4]), int(date[4:6]), int(date[6:8])).strftime("%Y-%m-%d")
@@ -231,12 +201,12 @@ def calculate_stats(ncfile, fname, loc, date, tide_opt=None, plot=False,
         plt.close()
 
     return (mTimes, oTimes, oU, oV, mU, mV, speedS, speedO, olon, olat, \
-            mlon, mlat, alpha, beta, tide, datetimes, odatetimes, nrmse, \
+            mlonc, mlatc, alpha, beta, tide, datetimes, odatetimes, nrmse, \
             rbias, rerru, rerrv, diffs)
 
 
 def call_many_drifts(drift_dir, model, loc, date, tide_opt=None, plot=False, \
-        tight=False, outpath=None, export=False, tt_window=None):
+        tight=False, outpath=None, export=False, tt_window=None, hide=False):
     """
     To operate around multi=True, call this function.
     """
@@ -247,6 +217,8 @@ def call_many_drifts(drift_dir, model, loc, date, tide_opt=None, plot=False, \
     msd = []
     olon = []
     olat = []
+    mlonc = []
+    mlatc = []
     tt = []
     tr = []
     tide = []
@@ -264,8 +236,6 @@ def call_many_drifts(drift_dir, model, loc, date, tide_opt=None, plot=False, \
 
     mlon = model.Grid.lon[:]
     mlat = model.Grid.lat[:]
-    mlonc = model.Grid.lonc[:]
-    mlatc = model.Grid.latc[:]
 
     # get list of all drifter files in directory
     matfiles = [drift_dir + f for f in os.listdir(drift_dir)]
@@ -302,7 +272,7 @@ def call_many_drifts(drift_dir, model, loc, date, tide_opt=None, plot=False, \
                         continue
 
         drifters[mfile] = {}
-        mtt, ott, ouu, ovv, muu, mvv, mss, oss, olonn, olatt, _, _, \
+        mtt, ott, ouu, ovv, muu, mvv, mss, oss, olonn, olatt, mlon, mlat, \
                 alpha, beta, ti, dtt, odtt, rmse, rmsdd, erru, errv, diffs \
                 = calculate_stats(model, drift, loc, date)
 
@@ -316,6 +286,8 @@ def call_many_drifts(drift_dir, model, loc, date, tide_opt=None, plot=False, \
         msd = np.hstack((msd, mss))
         olon = np.hstack((olon, olonn))
         olat = np.hstack((olat, olatt))
+        mlonc = np.hstack((mlonc, mlon))
+        mlatc = np.hstack((mlatc, mlat))
         tt = np.hstack((tt, alpha))
         tr = np.hstack((tr, beta))
         tide = np.hstack((tide, ti))
@@ -339,11 +311,13 @@ def call_many_drifts(drift_dir, model, loc, date, tide_opt=None, plot=False, \
         drifters[mfile]["ov"] = pd.Series(ovv.byteswap().newbyteorder())
         drifters[mfile]["olon"] = pd.Series(olonn.byteswap().newbyteorder())
         drifters[mfile]["olat"] = pd.Series(olatt.byteswap().newbyteorder())
+        drifters[mfile]["mlon"] = pd.Series(mlon.byteswap().newbyteorder())
+        drifters[mfile]["mlat"] = pd.Series(mlat.byteswap().newbyteorder())
         drifters[mfile]["tt"] = pd.Series(alpha.byteswap().newbyteorder())
         drifters[mfile]["tr"] = pd.Series(beta)
         drifters[mfile]["tide"] = pd.Series(ti.byteswap().newbyteorder())
         drifters[mfile]["dt"] = pd.Series(dtt.byteswap().newbyteorder())
-        drifters[mfile]["dtt"] = pd.Series(odtt.byteswap().newbyteorder())
+        drifters[mfile]["odt"] = pd.Series(odtt.byteswap().newbyteorder())
         drifters[mfile]["nrmse"] = pd.Series(rmse)
         drifters[mfile]["msd"] = pd.Series(rmsdd)
         drifters[mfile]["bias"] = pd.Series(diffs.byteswap().newbyteorder())
@@ -384,7 +358,7 @@ def call_many_drifts(drift_dir, model, loc, date, tide_opt=None, plot=False, \
                 mlon, mlat, model.Variables.matlabTime, \
                 olon, olat, ot, model.Grid.trinodes, vel_norm = vnorm,\
                 label = "Mean Velocity Norm (m/s)", bounds=box, \
-                title_main = loc + " Trajectory for " + date)
+                title_main = loc + " Trajectory for " + date, hide=hide)
 
         # if wanting to use untouched obs datetimes, use vstack((odatetimes,datetimes))
         fig2 = plotTimeSeries(np.reshape(np.tile(dt,2),\
@@ -395,18 +369,20 @@ def call_many_drifts(drift_dir, model, loc, date, tide_opt=None, plot=False, \
 
         fig3 = spatialError(mlon, mlat, olon, olat, osd, msd, \
                 model.Grid.trinodes, label='Relative Signed Error', error='sgn',\
-                title='Spatially-Distributed '+loc+' Signed Error for '+date)
+                title='Spatially-Distributed '+loc+' Signed Error for '+date, hide=hide)
 
         if not outpath:
             plt.show()
         else:
             if not osp.isdir(outpath):
                 sys.exit("outpath does not exist")
-            fig1.savefig(outpath + "/_" + loc + "_" + date + "_tr.png", bbox_inches='tight')
-            fig2.savefig(outpath + "/_" + loc + "_" + date + "_ts.png", bbox_inches='tight')
+            if tide_opt is None:
+                tide_opt = ""
+            fig1.savefig(outpath + "/_" + loc + tide_opt + "_" + date + "_tr.png", bbox_inches='tight')
+            fig2.savefig(outpath + "/_" + loc + tide_opt + "_" + date + "_ts.png", bbox_inches='tight')
             # hacky fix to access plotting function for PolyCollection/AxesSubplot object
             ax = fig3.get_axes()
-            ax.figure.savefig(outpath + "/_" + loc + "_" + date + "_er.png", bbox_inches='tight')
+            ax.figure.savefig(outpath + "/_" + loc + tide_opt + "_" + date + "_er.png", bbox_inches='tight')
 
         plt.close()
 

@@ -99,8 +99,12 @@ def spatialError(glon, glat, lon, lat, obs, sim, trinodes, where=111, \
     cbar.set_label(label, rotation=-90, labelpad=30)
 
     # label and axis parameters
-    ax.set_xlabel('Longitude')
-    ax.set_ylabel('Latitude')
+    if hide:
+        ax.set_xlabel('x')
+        ax.set_ylabel('y')
+    else:
+        ax.set_xlabel('Longitude')
+        ax.set_ylabel('Latitude')
     ax.patch.set_facecolor('0.5')
     scale = 1
 
