@@ -22,16 +22,24 @@ from utils import *
 from plot_utils import *
 from location_bounds import get_bounds
 
-def calculate_stats(ncfile, fname, loc, date, tide_opt=None, plot=False,
-        tight=False, outpath=None, multi=False):
+def calculateMKE(drift):
+    pass
+
+def calculate_stats(ncfile, fname, loc, date, plot=False,
+        tight=False, outpath=None):
     """
     Given a Drifter object from PySeidon, statistics are computed based on
     the closest spatial and temporal points to an FVCOM object.
 
-    Takes either two filename strings or two PySeidon objects
-
-    If more than one drifter is in a file, deals with it as best it can...
-    Enter date variable as YYYYMMDD.
+    inputs
+    ncfile  : FVCOM object or a netcdf filename
+    fname   : Drifter object or a matlab filename
+    loc     : location tag, string, one of "GP", "MP", "DG", "PP"
+    date    : date string, as YYYMMDD, ie. "20130801"
+    plots   : boolean, generate plots
+    tight   : boolean, apply tighting bounding boxes to plots
+    outpath : directory to save plots in. if none, displays plots
+    multi   : apply separate treatments for multiple drifters in one file/object
     """
     # checks if filename or object is passed, open if a filename is passed
     if type(ncfile) == str:
@@ -54,69 +62,25 @@ def calculate_stats(ncfile, fname, loc, date, tide_opt=None, plot=False,
     odatetimes = np.asarray([dn2dt(time) for time in oTimes])
 
     # find the relevant time window to work in
-    if not multi:
-        mStart, mEnd = float(mTimes[0]), float(mTimes[-1])
-        oStart, oEnd = float(oTimes[0]), float(oTimes[-1])
-        if oStart < mStart or mEnd < oEnd:
-            sys.exit('drifter not within model runtime window.')
-        idx = np.arange(0, len(oTimes))
-    else:
-        # sample the indices within the model time window
-        # is this better than what is done previously? yes -- deals with nonconsecutive data
-        dates = np.asarray([k.strftime("%Y%m%d") for k in odatetimes])
-        idx = np.squeeze(np.where(dates == date))
-        # if oStart < mStart or mEnd < oEnd:
-        #     start = np.where(oTimes > mStart)[0][0]
-        #     end = np.where(oTimes < mEnd)[0][-1]
-        #     idx = np.arange(start, end)
-        # else:
-        #     idx = np.arange(0, len(oTimes))
-        # this finds the indices to be used for searching beta and other constant vars
-        # old treatment
-        try:
-            look = np.squeeze(np.where([date in str(k) for k in drift.Data['fn']]))
-        # new treatment
-        except:
-            look = np.arange(0, len(drift.Data['Tr']))
+    mStart, mEnd = float(mTimes[0]), float(mTimes[-1])
+    oStart, oEnd = float(oTimes[0]), float(oTimes[-1])
+    if oStart < mStart or mEnd < oEnd:
+        sys.exit('drifter not within model runtime window.')
+    idx = np.arange(0, len(oTimes))
 
     # get beta and alpha
     # something messed up with extracting alpha from multi run in old treatment
-    if not multi:
-        # old treatment
-        try:
-            beta = drift.Data['water_level'].beta
-            alpha = drift.Data['velocity'].alpha[idx]
-        # new treatment
-        except:
-            alpha = drift.Data['tide_time'][idx]
-            beta = drift.Data['Tr'][idx]
-    else:
-        # old treatment
-        try:
-            alpha = drift.Data['velocity'].alpha[idx]
-            beta = drift.Data['water_level'].beta[look]
-        # new treatment
-        except:
-            alpha = drift.Data['tide_time'][idx]
-            beta = drift.Data['Tr'][look]
+    # old treatment
+    try:
+        beta = drift.Data['water_level'].beta
+        alpha = drift.Data['velocity'].alpha[idx]
+    # new treatment
+    except:
+        alpha = drift.Data['tide_time'][idx]
+        beta = drift.Data['Tr'][idx]
+        tide = np.empty(len(alpha), dtype="S6")
 
-    # tests tide condition -- doesn't work for multiple drifters in one file
-    # if not multi:
-        # old treatment
-        # try:
-        #     tide = str(drift.Data['water_level'].tide)
-        # new treatment
-        # except:
-        #     tide = np.empty(len(alpha), dtype="S6")
-        #     tide[alpha > 0.5] = "flood"
-        #     tide[alpha < 0.5] = "ebb"
-    # else:
-        # old treatment
-        # try:
-        #     tide = [str(k) for k in drift.Data['water_level'].tide[look]]
-        # new treatment
-        # except:
-    tide = np.empty(len(alpha), dtype="S6")
+    # get tide info
     tide[alpha < 0.5] = "flood"
     tide[alpha > 0.5] = "ebb"
     tide = np.asarray(tide)
@@ -161,8 +125,9 @@ def calculate_stats(ncfile, fname, loc, date, tide_opt=None, plot=False,
 
    # call plotting functions!
     if plot:
-        #model.Util3D.velo_norm()
-        #vnorm = model.Variables.velo_norm[:]
+        # uncomment below if your model does not have velocity norm
+        # model.Util3D.velo_norm()
+        # vnorm = model.Variables.velo_norm[:]
         vnorm = None
 
         if tight:
@@ -170,6 +135,7 @@ def calculate_stats(ncfile, fname, loc, date, tide_opt=None, plot=False,
         else:
             box = []
 
+        # call plotting functions
         fig1 = trajectoryPlot(model.Variables.u, model.Variables.v, \
                 mlon, mlat, model.Variables.matlabTime, \
                 olon, olat, oTimes, model.Grid.trinodes, vel_norm = vnorm,\
@@ -206,10 +172,24 @@ def calculate_stats(ncfile, fname, loc, date, tide_opt=None, plot=False,
 
 
 def call_many_drifts(drift_dir, model, loc, date, tide_opt=None, plot=False, \
-        tight=False, outpath=None, export=False, tt_window=None, hide=False):
+        tight=False, outpath=None, export=False, hide=False):
     """
-    To operate around multi=True, call this function.
+    given many drifters, do a bunch of stats. returns a dictionary with all data
+    in the form drift['YYYYMMDD']['drifter file name'] ...
+
+    inputs
+    drift_dir   : directory of drifter mat files
+    model       : fvcom object or netcdf filename
+    loc         : location string tag ("GP", "MP", "DG", "PP")
+    date        : date string of the model in the form YYYYMMDD
+    tide_opt    : subset drifter data based on whether "flood" or "ebb"
+    plot        : boolean, generate plots
+    tight       : boolean, constrict plotting regions
+    outpath     : save directory. if none, displays plots
+    export      : export compiled drifter data to csv in outpath directory
+    hide        : hide long/lats in spatial plots
     """
+    # initialize empty data arrays
     drifters = {}
     mt = []
     ot = []
@@ -240,6 +220,7 @@ def call_many_drifts(drift_dir, model, loc, date, tide_opt=None, plot=False, \
     # get list of all drifter files in directory
     matfiles = [drift_dir + f for f in os.listdir(drift_dir)]
 
+    # collect drifter files within fvcom time window
     mTimes = model.Variables.matlabTime[:]
     mStart, mEnd = float(mTimes[0]), float(mTimes[-1])
     mfiles = []
@@ -249,9 +230,11 @@ def call_many_drifts(drift_dir, model, loc, date, tide_opt=None, plot=False, \
         if dStart > mStart and mEnd > dEnd:
             mfiles.append(f)
 
+    # loop through drifter files
     for i, mfile in enumerate(mfiles, start=1):
         drift = Drifter(mfile, debug=False)
 
+        # get tide of drifter
         try:
             t = str(drift.Data['water_level'].tide)
         except:
@@ -259,6 +242,7 @@ def call_many_drifts(drift_dir, model, loc, date, tide_opt=None, plot=False, \
             t[drift.Data['tide_time'] < 0.5] = "flood"
             t[drift.Data['tide_time'] > 0.5] = "ebb"
 
+        # test if drifter is in tide option, if not, skip
         if tide_opt is not None:
             if isinstance(t, (str, unicode)):
                 if t != tide_opt:
@@ -272,10 +256,12 @@ def call_many_drifts(drift_dir, model, loc, date, tide_opt=None, plot=False, \
                         continue
 
         drifters[mfile] = {}
+        # call stats function
         mtt, ott, ouu, ovv, muu, mvv, mss, oss, olonn, olatt, mlon, mlat, \
                 alpha, beta, ti, dtt, odtt, rmse, rmsdd, erru, errv, diffs \
                 = calculate_stats(model, drift, loc, date)
 
+        # append to existing array for stats
         mt = np.hstack((mt, mtt))
         ot = np.hstack((ot, ott))
         ou = np.hstack((ou, ouu))
@@ -300,7 +286,6 @@ def call_many_drifts(drift_dir, model, loc, date, tide_opt=None, plot=False, \
         rerrv = np.hstack((rerrv, errv))
 
         # compile drifter data for export
-        drifters[mfile]["filename"] = str(mfile)
         drifters[mfile]["mtime"] = pd.Series(mtt.byteswap().newbyteorder())
         drifters[mfile]["otime"] = pd.Series(ott.byteswap().newbyteorder())
         drifters[mfile]["mspeed"] = pd.Series(mss.byteswap().newbyteorder())
@@ -324,11 +309,13 @@ def call_many_drifts(drift_dir, model, loc, date, tide_opt=None, plot=False, \
         drifters[mfile]["rerru"] = pd.Series(erru.byteswap().newbyteorder())
         drifters[mfile]["rerru"] = pd.Series(errv.byteswap().newbyteorder())
 
+    # final drifter structure for export
+    drift = {}
+    drift[date] = drifters
+
     # new date for printing
     date = datetime(int(date[0:4]), int(date[4:6]), int(date[6:8])).strftime("%Y-%m-%d")
 
-    drift = {}
-    drift[date] = drifters
     # export data to csv is desired
     if export:
         if not osp.isdir(outpath):
@@ -371,6 +358,25 @@ def call_many_drifts(drift_dir, model, loc, date, tide_opt=None, plot=False, \
                 model.Grid.trinodes, label='Relative Signed Error', error='sgn',\
                 title='Spatially-Distributed '+loc+' Signed Error for '+date, hide=hide)
 
+        # MEASURE OF SIMILARITY BETWEEN TRAJECTORY SPEEDS
+        # meanm = []
+        # meano = []
+        # sdm = []
+        # sdo = []
+        # _, idx_ll, cntl = np.unique(mlonc, return_index=True, return_counts=True)
+        # _, idx_tt, cntt = np.unique(mt, return_index=True, return_counts=True)
+        # for i, ll in enumerate(idx_ll):
+        #     meanm = np.hstack((meanm, np.mean(osd[ll:ll+cnt[i]])))
+
+
+
+        # fig4 = plotTimeSeries(np.reshape(np.tile(dt,2),\
+        #     (2, len(dt))), np.vstack((osd, msd)), \
+        #     loc, label=['Observed', 'Simulated'], where=111, \
+        #     title=loc + ' Drifter Speeds for ' + date,  \
+        #     ylab='Speed (m/s)', style="style_drift.json", lines=['o','^'])
+
+        # display or save plots to outpath
         if not outpath:
             plt.show()
         else:

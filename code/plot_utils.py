@@ -28,6 +28,11 @@ def varCorr(var1, var2, xlabel='', ylabel='', title='', style=None, where=111):
     If plot==True, a scatter plot of the two variables will be generated.
 
     Returns the Pearson coefficient and the two-tailed p-value.
+
+    var1, var2  : two variable arrays, same length
+    xlabel, ylabel, title : self-explanatory
+    style : json style filename
+    where : where on figure to place plot
     """
     sns.set(font="serif")
     fig = plt.Figure()
@@ -127,7 +132,7 @@ def spatialError(glon, glat, lon, lat, obs, sim, trinodes, where=111, \
     return f
 
 
-def plotTimeSeries(dt, var, loc, label=['',''], title='', \
+def plotTimeSeries(dt, var, loc, sd=None, iqr=False, label=['',''], title='', \
                 style=None, ylab='', where=111, lines=['--','-'],\
                 axx=None, axy=None, legend=True, multi=False):
     """
@@ -137,6 +142,8 @@ def plotTimeSeries(dt, var, loc, label=['',''], title='', \
     input:
         - datetimes : two datetimes
         - vars : two variables to plot
+        - sd : vector of sdevs for first var (optional)
+        - iqr : boolean. plots boxplots instead for var 1 rather than errorbars
         - loc : location tag
         - axx : x axis to share
         - axy : y axis to share
@@ -150,6 +157,7 @@ def plotTimeSeries(dt, var, loc, label=['',''], title='', \
     return:
         - fig, ax
     """
+    # format date, set style
     fomt = DateFormatter('%H:%M:%S')
 
     if style is not None:
@@ -161,21 +169,29 @@ def plotTimeSeries(dt, var, loc, label=['',''], title='', \
         offset = np.nonzero(dt[0] - dt[0][0])[0][0]
         step = (dt[0][offset] - dt[0][0]).seconds
 
+        # find the breaks in time
         dtt = np.asarray([d.seconds for d in np.diff(dt[0])])
         breaks = np.squeeze(np.where(dtt > 4*step))
         num = len(breaks) + 1
         breaks = np.insert(breaks, 0, -1)
         breaks = np.append(breaks, -1)
 
+        # generate subplots based on # breaks, plots them
         fig, ax = plt.subplots(1, num, sharey=True, tight_layout=True)
         fig.subplots_adjust(wspace=0.005)
         for k in xrange(num):
             try:
-                ax[k].plot(dt[0], var[0], lines[0], label=label[0])
+                if sd is not None:
+                    ax[k].errorbar(dt[0], var[0], yerr=sd, fmt=lines[0], label=label[0])
+                elif iqr:
+                    pass
+                else:
+                    ax[k].plot(dt[0], var[0], lines[0], label=label[0])
                 ax[k].plot(dt[1], var[1], lines[1], label=label[1])
             except ValueError:
                 return False
 
+            # format axes to show dates
             ax[k].set_xlim(dt[0][breaks[k]+1], dt[0][breaks[k+1]])
             ax[k].xaxis_date()
             ax[k].get_xaxis().set_major_formatter(fomt)
@@ -191,10 +207,12 @@ def plotTimeSeries(dt, var, loc, label=['',''], title='', \
                 ax[k].tick_params(right='off')
                 ax[k].tick_params(left='off')
 
+            # rotate dates 30 degreres
             ticks = ax[k].get_xticklabels()
             for tick in ticks:
                 tick.set_rotation(30)
 
+        # set labels and legends
         ax[0].set_ylabel(ylab)
         ax[num/2].set_xlabel('Time (HH:MM:SS)')
         ax[num/2].set_title(title)
@@ -209,6 +227,7 @@ def plotTimeSeries(dt, var, loc, label=['',''], title='', \
         plt.grid(True)
         plt.tight_layout()
 
+    # if not multi, dont bother with temporal breaks
     else:
         # add subplot and configure axes
         fig = plt.figure()
@@ -221,12 +240,19 @@ def plotTimeSeries(dt, var, loc, label=['',''], title='', \
         else:
             ax = fig.add_subplot(where)
 
+        # generate plots
         try:
-            ax.plot(dt[0], var[0], lines[0], label=label[0])
+            if sd is not None:
+                ax[k].errorbar(dt[0], var[0], yerr=sd, fmt=lines[0], label=label[0])
+            elif iqr:
+                pass
+            else:
+                ax.plot(dt[0], var[0], lines[0], label=label[0])
             ax.plot(dt[1], var[1], lines[1], label=label[1])
         except ValueError:
             return False
 
+        # set labels, legend
         ax.set_ylabel(ylab)
         ax.set_xlabel('Time (HH:MM:SS)')
         ax.set_title(title)
@@ -237,8 +263,7 @@ def plotTimeSeries(dt, var, loc, label=['',''], title='', \
             for lab in leg.get_lines():
                 lab.set_linewidth(1)
 
-        # set the axis limits (hardcoded for consistency)
-        # ax2.set_ylim(0.0, 3.0)
+        # set the axis limits
         fomt = DateFormatter('%H:%M:%S')
         plt.gca().xaxis_date()
         plt.gca().get_xaxis().set_major_formatter(fomt)
@@ -259,9 +284,19 @@ def trajectoryPlot(u, v, lon, lat, mtime, x, y, otime, trinodes, hide=False, \
     a comparitive speed-time plot for each drifter in the given directory.
 
     input:
-        - bounds : array of min max lon lat *priority over tight*
+        - u, v      : u and v model velocity arrays
+        - lon, lat  : model lon and lat
+        - mtime     : model date times
+        - x, y      : drifter lon, lat arrays
+        - otime     : observed date times
+        - trinodes  : model trinodes
+        - hide      : hide long/lat on plots, use hidden location
+        - vel_norm  : use a particular vel_norm
+        - label     : label for color bar
+        - title_main: title for plot
+        - bounds    : array of min max lon lat *priority over tight*
     returns:
-        - fig1, a trajectory, fig2, a timeseries
+        - fig
     """
     sns.set(font="serif")
 
@@ -284,3 +319,4 @@ def trajectoryPlot(u, v, lon, lat, mtime, x, y, otime, trinodes, hide=False, \
     plt.scatter(x,y,c='#9b009b')
 
     return fig
+

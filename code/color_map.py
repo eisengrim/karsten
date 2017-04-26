@@ -21,7 +21,9 @@ def createColorMap(var, lon, lat, trinodes, title='', label='', \
         - mesh = boolean, True with mesh, False without mesh
         - bounds = list, constricted region subdomain in form of
             [lon.min, lon.max, lat.min, lat.max]
-        - color = 'jet' or 'gist_earth'
+        - c = 'jet' or 'gist_earth'
+        - figsize, fontsize : optional parameters
+        - hide: hide long, lat coordinates
     returns:
         - figure for future plotting
     """
@@ -88,6 +90,7 @@ def createColorMap(var, lon, lat, trinodes, title='', label='', \
         ax.xaxis.set_major_formatter(ticks)
         ax.yaxis.set_major_formatter(ticks)
 
+    # set axis limits based on bounds
     ax.set_xlim([bb[0], bb[1]])
     ax.set_ylim([bb[2], bb[3]])
     ax.grid()

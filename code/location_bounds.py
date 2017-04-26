@@ -1,6 +1,9 @@
 #! /usr/env/python2.7
 
 def get_centre(loc):
+    """
+    get centres of certain domains (used for velo_norm)
+    """
     # find the location centre for flood/tide split calculation
     if loc == 'GP':
         return [-66.33906, 44.26898]
@@ -13,6 +16,9 @@ def get_centre(loc):
 
 
 def get_bounds(loc):
+    """
+    get location bounds for tight plotting
+    """
     if loc == 'GP':
         return [-66.355, -66.31, 44.245, 44.2925]
     elif loc == 'DG':
