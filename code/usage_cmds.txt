@@ -1,0 +1,14 @@
+run loadLibraries.py
+df = call_many_drifts(ddir, model1, "GP", "20130801", plot=False)
+df['20130801'].keys()
+for k in df['20130801'].keys():
+    print df['20130801'][k].keys()
+
+dates=["20130801", "20130802", "20130808", "20130808"]
+tides=["flood", "ebb", "flood", "ebb"]
+models = [model1, model2, model8, model8]
+for i,d in enumerate(dates):
+    dr = call_many_drifts(ddir, models[i], "GP", d,
+    tide_opt=tides[i], plot=True, outpath="~/.")
+
+
